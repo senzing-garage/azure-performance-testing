@@ -9,6 +9,9 @@
 - Bicep: https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/
 - Terraform: https://learn.microsoft.com/en-us/azure/developer/terraform/
 - ARM Templates: JSON based, easier to use Bicep which "compiles" down to this.
+- Docker compose:
+    - https://learn.microsoft.com/en-us/azure/container-instances/tutorial-docker-compose
+    - https://docs.docker.com/compose/compose-file/05-services/#scale
 
 ## az - Azure CLI
 
@@ -65,6 +68,18 @@ To create the resources, in the `perf.tf` directory:
 terraform init -upgrade
 terraform plan -out main.tfplan
 terraform apply main.tfplan
+
+terraform output -json | jq -r ".db_admin_password.value"
+```
+
+Other terraform things to play with:
+
+```
+resource_group_name=$(terraform output -raw resource_group_name)
+az group show --name $resource_group_name
+
+terraform show -json main.tfplan
+
 ```
 
 To destroy the resources, in the `perf.tf` directory:
@@ -76,6 +91,12 @@ terraform apply main.destroy.tfplan
 
 ### NOTES:
 
+#### references:
+
+- terraform on azure: https://learn.microsoft.com/en-us/azure/developer/terraform/
+- resource group creation: https://learn.microsoft.com/en-us/azure/developer/terraform/create-resource-group?tabs=azure-cli
+    - left panel lists other resources and howtos of interest
+
 #### environment variables:
 
 Terraform can directly access environment variables that are named using the pattern TF_VAR_, for example TF_VAR_foo=bar will provide the value bar to the variable declared using variable "foo" {}
@@ -85,11 +106,28 @@ Ref. https://support.hashicorp.com/hc/en-us/articles/4547786359571-Reading-and-u
 ## sqlcmd
 
 - https://learn.microsoft.com/en-us/sql/linux/sql-server-linux-setup-tools?view=sql-server-ver16&tabs=redhat-install
+- https://learn.microsoft.com/en-us/sql/tools/sqlcmd/sqlcmd-utility?view=sql-server-ver16&tabs=go%2Cmac&pivots=cs1-bash
 
-Install using brew:
+### Install using brew:
+
+- https://learn.microsoft.com/en-us/sql/linux/sql-server-linux-setup-tools?view=sql-server-ver16&tabs=redhat-install
 
 ```
 brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
 brew update
 brew install mssql-tools18
 ```
+
+### Using sqlcmd:
+
+- https://learn.microsoft.com/en-us/sql/tools/sqlcmd/sqlcmd-utility?view=sql-server-ver16&tabs=go%2Cwindows&pivots=cs1-bash
+
+```
+export SQLCMDPASSWORD=$(terraform output -json | jq -r ".db_admin_password.value")
+sqlcmd -Ssenzing-sql-server.database.windows.net -dG2 -Usenzing
+1> select @@version
+2> go
+```
+
+Note: must always use "go" to execute the sql command. Use "exit" to quit sqlcmd.
+
