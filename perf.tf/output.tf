@@ -11,3 +11,12 @@ output "db_admin_password" {
   sensitive = true
   value     = local.db_admin_password
 }
+
+output "ip_address" {
+  value = azurerm_container_group.cg.ip_address
+}
+
+#the dns fqdn of the container group if dns_name_label is set
+output "fqdn" {
+  value = azurerm_container_group.cg.fqdn
+}

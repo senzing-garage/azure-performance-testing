@@ -60,6 +60,19 @@ $ export ARM_TENANT_ID="<tenantId>"
 az account get-access-token
 ```
 
+### Looking at container logs:
+
+- https://learn.microsoft.com/en-us/azure/container-instances/container-instances-get-logs
+
+```
+az container logs --resource-group myResourceGroup --name mycontainer
+az container logs --resource-group sz-rg-senzing --name sz-init-database
+
+az container attach --resource-group myResourceGroup --name mycontainer
+az container attach --resource-group sz-rg-senzing --name sz-init-database
+az container show --resource-group sz-rg-senzing --name sz-init-database
+```
+
 ## Terraform
 
 To create the resources, in the `perf.tf` directory:
