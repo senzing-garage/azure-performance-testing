@@ -34,9 +34,21 @@ resource "azurerm_mssql_server" "server" {
   version                      = "12.0"
 }
 
+resource "azurerm_mssql_firewall_rule" "firewall" {
+  name             = "AllowAzureServices"
+  server_id        = azurerm_mssql_server.server.id
+  start_ip_address = "0.0.0.0"
+  end_ip_address   = "0.0.0.0"
+}
+
 resource "azurerm_mssql_database" "db" {
   name      = var.sql_db_name
   server_id = azurerm_mssql_server.server.id
+  # max_size_gb    = 4
+  # read_scale     = true
+  # sku_name       = "S0"
+  # zone_redundant = true
+  # enclave_type   = "VBS"
 }
 
 resource "azurerm_container_group" "cg" {
@@ -46,32 +58,32 @@ resource "azurerm_container_group" "cg" {
   ip_address_type     = "Public"
   dns_name_label      = "${random_pet.rg_name.id}-cg"
   os_type             = "Linux"
-  depends_on = [ azurerm_mssql_database.db ]
+  depends_on          = [azurerm_mssql_database.db]
 
-  init_container {
-    name   = "init-database"
-    image  = "docker.io/senzing/init-database:0.5.2"
+  # init_container {
+  #   name  = "init-database"
+  #   image = "docker.io/senzing/init-database:0.5.2"
 
-    environment_variables = {
-      SENZING_TOOLS_ENGINE_CONFIGURATION_JSON = <<EOT
-        {
-            "PIPELINE": {
-                "CONFIGPATH": "/etc/opt/senzing",
-                "LICENSESTRINGBASE64": "{license_string}",
-                "RESOURCEPATH": "/opt/senzing/g2/resources",
-                "SUPPORTPATH": "/opt/senzing/data"
-            },
-            "SQL": {
-                "BACKEND": "SQL",
-                "CONNECTION" : "mssql://${azurerm_mssql_server.server.administrator_login}:${local.db_admin_password}@${azurerm_mssql_server.server.fully_qualified_domain_name}:1433/${azurerm_mssql_database.db.name}"
-            }
-        }
-      EOT
-      LC_CTYPE = "en_US.utf8"
-      SENZING_SUBCOMMAND = "mandatory"
-      SENZING_DEBUG = "False"
-    }
-  }
+  #   environment_variables = {
+  #     SENZING_TOOLS_ENGINE_CONFIGURATION_JSON = <<EOT
+  #       {
+  #           "PIPELINE": {
+  #               "CONFIGPATH": "/etc/opt/senzing",
+  #               "LICENSESTRINGBASE64": "{license_string}",
+  #               "RESOURCEPATH": "/opt/senzing/g2/resources",
+  #               "SUPPORTPATH": "/opt/senzing/data"
+  #           },
+  #           "SQL": {
+  #               "BACKEND": "SQL",
+  #               "CONNECTION" : "mssql://${azurerm_mssql_server.server.administrator_login}:${local.db_admin_password}@${azurerm_mssql_server.server.fully_qualified_domain_name}:1433/${azurerm_mssql_database.db.name}"
+  #           }
+  #       }
+  #     EOT
+  #     LC_CTYPE                                = "en_US.utf8"
+  #     SENZING_SUBCOMMAND                      = "mandatory"
+  #     SENZING_DEBUG                           = "False"
+  #   }
+  # }
 
   container {
     name   = "hw"

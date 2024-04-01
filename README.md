@@ -73,12 +73,32 @@ az container attach --resource-group sz-rg-senzing --name sz-init-database
 az container show --resource-group sz-rg-senzing --name sz-init-database
 ```
 
+### Database SKUs
+
+- https://learn.microsoft.com/en-us/dotnet/api/azure.resourcemanager.sql.sqldatabasedata.sku?view=azure-dotnet
+
+
+#### get the database config [default database config](#default-database-config)
+
+- ref: https://learn.microsoft.com/en-us/cli/azure/sql/db?view=azure-cli-latest#az-sql-db-show
+
+```
+az sql db show --name G2 --resource-group sz-possible-filly-rg --server sz-possible-filly-mssql-server
+```
+
+#### available SKUs [Westus list](#available-skus-for-westus)
+
+```
+az sql db list-editions -l westus -o table
+```
+
 ## Terraform
 
 To create the resources, in the `perf.tf` directory:
 
 ```
 terraform init -upgrade
+terraform validate
 terraform plan -out main.tfplan
 terraform apply main.tfplan
 
@@ -144,3 +164,290 @@ sqlcmd -Ssenzing-sql-server.database.windows.net -dG2 -Usenzing
 
 Note: must always use "go" to execute the sql command. Use "exit" to quit sqlcmd.
 
+
+----------------------------------------
+
+#### default database config
+
+```
+az sql db show --name G2 --resource-group sz-possible-filly-rg --server sz-possible-filly-mssql-server
+
+{
+  "autoPauseDelay": null,
+  "availabilityZone": "NoPreference",
+  "catalogCollation": "SQL_Latin1_General_CP1_CI_AS",
+  "collation": "SQL_Latin1_General_CP1_CI_AS",
+  "createMode": null,
+  "creationDate": "2024-04-01T18:03:45.370000+00:00",
+  "currentBackupStorageRedundancy": "Geo",
+  "currentServiceObjectiveName": "GP_Gen5_2",
+  "currentSku": {
+    "capacity": 2,
+    "family": "Gen5",
+    "name": "GP_Gen5",
+    "size": null,
+    "tier": "GeneralPurpose"
+  },
+  "databaseId": "46a52e52-b901-4d45-ae43-9b531037bcf2",
+  "defaultSecondaryLocation": "eastus",
+  "earliestRestoreDate": null,
+  "edition": "GeneralPurpose",
+  "elasticPoolId": null,
+  "elasticPoolName": null,
+  "encryptionProtector": null,
+  "encryptionProtectorAutoRotation": null,
+  "failoverGroupId": null,
+  "federatedClientId": null,
+  "freeLimitExhaustionBehavior": null,
+  "highAvailabilityReplicaCount": null,
+  "id": "/subscriptions/5415bf99-6956-43fd-a8a9-434c958ca13c/resourceGroups/sz-possible-filly-rg/providers/Microsoft.Sql/servers/sz-possible-filly-mssql-server/databases/G2",
+  "identity": null,
+  "isInfraEncryptionEnabled": false,
+  "keys": null,
+  "kind": "v12.0,user,vcore",
+  "ledgerOn": false,
+  "licenseType": "LicenseIncluded",
+  "location": "westus",
+  "longTermRetentionBackupResourceId": null,
+  "maintenanceConfigurationId": "/subscriptions/5415bf99-6956-43fd-a8a9-434c958ca13c/providers/Microsoft.Maintenance/publicMaintenanceConfigurations/SQL_Default",
+  "managedBy": null,
+  "manualCutover": null,
+  "maxLogSizeBytes": 193273528320,
+  "maxSizeBytes": 34359738368,
+  "minCapacity": null,
+  "name": "G2",
+  "pausedDate": null,
+  "performCutover": null,
+  "preferredEnclaveType": "Default",
+  "readScale": "Disabled",
+  "recoverableDatabaseId": null,
+  "recoveryServicesRecoveryPointId": null,
+  "requestedBackupStorageRedundancy": "Geo",
+  "requestedServiceObjectiveName": "GP_Gen5_2",
+  "resourceGroup": "sz-possible-filly-rg",
+  "restorableDroppedDatabaseId": null,
+  "restorePointInTime": null,
+  "resumedDate": null,
+  "sampleName": null,
+  "secondaryType": null,
+  "sku": {
+    "capacity": 2,
+    "family": "Gen5",
+    "name": "GP_Gen5",
+    "size": null,
+    "tier": "GeneralPurpose"
+  },
+  "sourceDatabaseDeletionDate": null,
+  "sourceDatabaseId": null,
+  "sourceResourceId": null,
+  "status": "Online",
+  "tags": {},
+  "type": "Microsoft.Sql/servers/databases",
+  "useFreeLimit": null,
+  "zoneRedundant": false
+}
+```
+
+#### Available SKUs for westus
+
+```
+$ az sql db list-editions -l westus -o table
+
+ServiceObjective    Sku            Edition           Family    Capacity    Unit    Available
+------------------  -------------  ----------------  --------  ----------  ------  -----------
+System              System         System                      0           DTU     False
+System0             System         System                      0           DTU     False
+System1             System         System                      0           DTU     False
+System2             System         System                      0           DTU     False
+System3             System         System                      0           DTU     False
+System4             System         System                      0           DTU     False
+System2L            System         System                      0           DTU     False
+System3L            System         System                      0           DTU     False
+System4L            System         System                      0           DTU     False
+GP_SYSTEM_2         GP_SYSTEM      System            Gen5      2           VCores  False
+GP_SYSTEM_4         GP_SYSTEM      System            Gen5      4           VCores  False
+GP_SYSTEM_8         GP_SYSTEM      System            Gen5      8           VCores  False
+Free                Free           Free                        5           DTU     True
+Basic               Basic          Basic                       5           DTU     True
+S0                  Standard       Standard                    10          DTU     True
+S1                  Standard       Standard                    20          DTU     True
+S2                  Standard       Standard                    50          DTU     True
+S3                  Standard       Standard                    100         DTU     True
+S4                  Standard       Standard                    200         DTU     True
+S6                  Standard       Standard                    400         DTU     True
+S7                  Standard       Standard                    800         DTU     True
+S9                  Standard       Standard                    1600        DTU     True
+S12                 Standard       Standard                    3000        DTU     True
+P1                  Premium        Premium                     125         DTU     True
+P2                  Premium        Premium                     250         DTU     True
+P4                  Premium        Premium                     500         DTU     True
+P6                  Premium        Premium                     1000        DTU     True
+P11                 Premium        Premium                     1750        DTU     True
+P15                 Premium        Premium                     4000        DTU     True
+DW100c              DataWarehouse  DataWarehouse               900         DTU     True
+DW200c              DataWarehouse  DataWarehouse               1800        DTU     True
+DW300c              DataWarehouse  DataWarehouse               2700        DTU     True
+DW400c              DataWarehouse  DataWarehouse               3600        DTU     True
+DW500c              DataWarehouse  DataWarehouse               4500        DTU     True
+DW1000c             DataWarehouse  DataWarehouse               9000        DTU     True
+DW1500c             DataWarehouse  DataWarehouse               13500       DTU     True
+DW2000c             DataWarehouse  DataWarehouse               18000       DTU     True
+DW2500c             DataWarehouse  DataWarehouse               22500       DTU     True
+DW3000c             DataWarehouse  DataWarehouse               27000       DTU     True
+DW5000c             DataWarehouse  DataWarehouse               45000       DTU     True
+DW6000c             DataWarehouse  DataWarehouse               54000       DTU     True
+DW7500c             DataWarehouse  DataWarehouse               67500       DTU     True
+DW10000c            DataWarehouse  DataWarehouse               90000       DTU     True
+DW15000c            DataWarehouse  DataWarehouse               135000      DTU     True
+DW30000c            DataWarehouse  DataWarehouse               270000      DTU     True
+DS100               Stretch        Stretch                     750         DTU     True
+DS200               Stretch        Stretch                     1500        DTU     True
+DS300               Stretch        Stretch                     2250        DTU     True
+DS400               Stretch        Stretch                     3000        DTU     True
+DS500               Stretch        Stretch                     3750        DTU     True
+DS600               Stretch        Stretch                     4500        DTU     True
+DS1000              Stretch        Stretch                     7500        DTU     True
+DS1200              Stretch        Stretch                     9000        DTU     True
+DS1500              Stretch        Stretch                     11250       DTU     True
+DS2000              Stretch        Stretch                     15000       DTU     True
+GP_S_Gen5_1         GP_S_Gen5      GeneralPurpose    Gen5      1           VCores  True
+GP_Gen5_2           GP_Gen5        GeneralPurpose    Gen5      2           VCores  True
+GP_S_Gen5_2         GP_S_Gen5      GeneralPurpose    Gen5      2           VCores  True
+GP_DC_2             GP_DC          GeneralPurpose    DC        2           VCores  True
+GP_Gen5_4           GP_Gen5        GeneralPurpose    Gen5      4           VCores  True
+GP_S_Gen5_4         GP_S_Gen5      GeneralPurpose    Gen5      4           VCores  True
+GP_DC_4             GP_DC          GeneralPurpose    DC        4           VCores  True
+GP_Gen5_6           GP_Gen5        GeneralPurpose    Gen5      6           VCores  True
+GP_S_Gen5_6         GP_S_Gen5      GeneralPurpose    Gen5      6           VCores  True
+GP_DC_6             GP_DC          GeneralPurpose    DC        6           VCores  True
+GP_Gen5_8           GP_Gen5        GeneralPurpose    Gen5      8           VCores  True
+GP_S_Gen5_8         GP_S_Gen5      GeneralPurpose    Gen5      8           VCores  True
+GP_DC_8             GP_DC          GeneralPurpose    DC        8           VCores  True
+GP_Gen5_10          GP_Gen5        GeneralPurpose    Gen5      10          VCores  True
+GP_S_Gen5_10        GP_S_Gen5      GeneralPurpose    Gen5      10          VCores  True
+GP_DC_10            GP_DC          GeneralPurpose    DC        10          VCores  True
+GP_Gen5_12          GP_Gen5        GeneralPurpose    Gen5      12          VCores  True
+GP_S_Gen5_12        GP_S_Gen5      GeneralPurpose    Gen5      12          VCores  True
+GP_DC_12            GP_DC          GeneralPurpose    DC        12          VCores  True
+GP_Gen5_14          GP_Gen5        GeneralPurpose    Gen5      14          VCores  True
+GP_S_Gen5_14        GP_S_Gen5      GeneralPurpose    Gen5      14          VCores  True
+GP_DC_14            GP_DC          GeneralPurpose    DC        14          VCores  True
+GP_Gen5_16          GP_Gen5        GeneralPurpose    Gen5      16          VCores  True
+GP_S_Gen5_16        GP_S_Gen5      GeneralPurpose    Gen5      16          VCores  True
+GP_DC_16            GP_DC          GeneralPurpose    DC        16          VCores  True
+GP_Gen5_18          GP_Gen5        GeneralPurpose    Gen5      18          VCores  True
+GP_S_Gen5_18        GP_S_Gen5      GeneralPurpose    Gen5      18          VCores  True
+GP_DC_18            GP_DC          GeneralPurpose    DC        18          VCores  True
+GP_Gen5_20          GP_Gen5        GeneralPurpose    Gen5      20          VCores  True
+GP_S_Gen5_20        GP_S_Gen5      GeneralPurpose    Gen5      20          VCores  True
+GP_DC_20            GP_DC          GeneralPurpose    DC        20          VCores  True
+GP_Gen5_24          GP_Gen5        GeneralPurpose    Gen5      24          VCores  True
+GP_S_Gen5_24        GP_S_Gen5      GeneralPurpose    Gen5      24          VCores  True
+GP_Gen5_32          GP_Gen5        GeneralPurpose    Gen5      32          VCores  True
+GP_S_Gen5_32        GP_S_Gen5      GeneralPurpose    Gen5      32          VCores  True
+GP_DC_32            GP_DC          GeneralPurpose    DC        32          VCores  True
+GP_Gen5_40          GP_Gen5        GeneralPurpose    Gen5      40          VCores  True
+GP_S_Gen5_40        GP_S_Gen5      GeneralPurpose    Gen5      40          VCores  True
+GP_DC_40            GP_DC          GeneralPurpose    DC        40          VCores  True
+GP_Gen5_80          GP_Gen5        GeneralPurpose    Gen5      80          VCores  True
+GP_S_Gen5_80        GP_S_Gen5      GeneralPurpose    Gen5      80          VCores  True
+GP_Gen5_128         GP_Gen5        GeneralPurpose    Gen5      128         VCores  True
+BC_Gen5_2           BC_Gen5        BusinessCritical  Gen5      2           VCores  True
+BC_DC_2             BC_DC          BusinessCritical  DC        2           VCores  True
+BC_Gen5_4           BC_Gen5        BusinessCritical  Gen5      4           VCores  True
+BC_DC_4             BC_DC          BusinessCritical  DC        4           VCores  True
+BC_Gen5_6           BC_Gen5        BusinessCritical  Gen5      6           VCores  True
+BC_DC_6             BC_DC          BusinessCritical  DC        6           VCores  True
+BC_Gen5_8           BC_Gen5        BusinessCritical  Gen5      8           VCores  True
+BC_DC_8             BC_DC          BusinessCritical  DC        8           VCores  True
+BC_Gen5_10          BC_Gen5        BusinessCritical  Gen5      10          VCores  True
+BC_DC_10            BC_DC          BusinessCritical  DC        10          VCores  True
+BC_Gen5_12          BC_Gen5        BusinessCritical  Gen5      12          VCores  True
+BC_DC_12            BC_DC          BusinessCritical  DC        12          VCores  True
+BC_Gen5_14          BC_Gen5        BusinessCritical  Gen5      14          VCores  True
+BC_DC_14            BC_DC          BusinessCritical  DC        14          VCores  True
+BC_Gen5_16          BC_Gen5        BusinessCritical  Gen5      16          VCores  True
+BC_DC_16            BC_DC          BusinessCritical  DC        16          VCores  True
+BC_Gen5_18          BC_Gen5        BusinessCritical  Gen5      18          VCores  True
+BC_DC_18            BC_DC          BusinessCritical  DC        18          VCores  True
+BC_Gen5_20          BC_Gen5        BusinessCritical  Gen5      20          VCores  True
+BC_DC_20            BC_DC          BusinessCritical  DC        20          VCores  True
+BC_Gen5_24          BC_Gen5        BusinessCritical  Gen5      24          VCores  True
+BC_Gen5_32          BC_Gen5        BusinessCritical  Gen5      32          VCores  True
+BC_DC_32            BC_DC          BusinessCritical  DC        32          VCores  True
+BC_Gen5_40          BC_Gen5        BusinessCritical  Gen5      40          VCores  True
+BC_DC_40            BC_DC          BusinessCritical  DC        40          VCores  True
+BC_Gen5_80          BC_Gen5        BusinessCritical  Gen5      80          VCores  True
+BC_Gen5_128         BC_Gen5        BusinessCritical  Gen5      128         VCores  True
+HS_Gen5_2           HS_Gen5        Hyperscale        Gen5      2           VCores  True
+HS_S_Gen5_2         HS_S_Gen5      Hyperscale        Gen5      2           VCores  True
+HS_PRMS_2           HS_PRMS        Hyperscale        8IM       2           VCores  True
+HS_MOPRMS_2         HS_MOPRMS      Hyperscale        8IH       2           VCores  True
+HS_DC_2             HS_DC          Hyperscale        DC        2           VCores  True
+HS_Gen5_4           HS_Gen5        Hyperscale        Gen5      4           VCores  True
+HS_S_Gen5_4         HS_S_Gen5      Hyperscale        Gen5      4           VCores  True
+HS_PRMS_4           HS_PRMS        Hyperscale        8IM       4           VCores  True
+HS_MOPRMS_4         HS_MOPRMS      Hyperscale        8IH       4           VCores  True
+HS_DC_4             HS_DC          Hyperscale        DC        4           VCores  True
+HS_Gen5_6           HS_Gen5        Hyperscale        Gen5      6           VCores  True
+HS_S_Gen5_6         HS_S_Gen5      Hyperscale        Gen5      6           VCores  True
+HS_PRMS_6           HS_PRMS        Hyperscale        8IM       6           VCores  True
+HS_MOPRMS_6         HS_MOPRMS      Hyperscale        8IH       6           VCores  True
+HS_DC_6             HS_DC          Hyperscale        DC        6           VCores  True
+HS_Gen5_8           HS_Gen5        Hyperscale        Gen5      8           VCores  True
+HS_S_Gen5_8         HS_S_Gen5      Hyperscale        Gen5      8           VCores  True
+HS_PRMS_8           HS_PRMS        Hyperscale        8IM       8           VCores  True
+HS_MOPRMS_8         HS_MOPRMS      Hyperscale        8IH       8           VCores  True
+HS_DC_8             HS_DC          Hyperscale        DC        8           VCores  True
+HS_Gen5_10          HS_Gen5        Hyperscale        Gen5      10          VCores  True
+HS_S_Gen5_10        HS_S_Gen5      Hyperscale        Gen5      10          VCores  True
+HS_PRMS_10          HS_PRMS        Hyperscale        8IM       10          VCores  True
+HS_MOPRMS_10        HS_MOPRMS      Hyperscale        8IH       10          VCores  True
+HS_DC_10            HS_DC          Hyperscale        DC        10          VCores  True
+HS_Gen5_12          HS_Gen5        Hyperscale        Gen5      12          VCores  True
+HS_S_Gen5_12        HS_S_Gen5      Hyperscale        Gen5      12          VCores  True
+HS_PRMS_12          HS_PRMS        Hyperscale        8IM       12          VCores  True
+HS_MOPRMS_12        HS_MOPRMS      Hyperscale        8IH       12          VCores  True
+HS_DC_12            HS_DC          Hyperscale        DC        12          VCores  True
+HS_Gen5_14          HS_Gen5        Hyperscale        Gen5      14          VCores  True
+HS_S_Gen5_14        HS_S_Gen5      Hyperscale        Gen5      14          VCores  True
+HS_PRMS_14          HS_PRMS        Hyperscale        8IM       14          VCores  True
+HS_MOPRMS_14        HS_MOPRMS      Hyperscale        8IH       14          VCores  True
+HS_DC_14            HS_DC          Hyperscale        DC        14          VCores  True
+HS_Gen5_16          HS_Gen5        Hyperscale        Gen5      16          VCores  True
+HS_S_Gen5_16        HS_S_Gen5      Hyperscale        Gen5      16          VCores  True
+HS_PRMS_16          HS_PRMS        Hyperscale        8IM       16          VCores  True
+HS_MOPRMS_16        HS_MOPRMS      Hyperscale        8IH       16          VCores  True
+HS_DC_16            HS_DC          Hyperscale        DC        16          VCores  True
+HS_Gen5_18          HS_Gen5        Hyperscale        Gen5      18          VCores  True
+HS_S_Gen5_18        HS_S_Gen5      Hyperscale        Gen5      18          VCores  True
+HS_PRMS_18          HS_PRMS        Hyperscale        8IM       18          VCores  True
+HS_MOPRMS_18        HS_MOPRMS      Hyperscale        8IH       18          VCores  True
+HS_DC_18            HS_DC          Hyperscale        DC        18          VCores  True
+HS_Gen5_20          HS_Gen5        Hyperscale        Gen5      20          VCores  True
+HS_S_Gen5_20        HS_S_Gen5      Hyperscale        Gen5      20          VCores  True
+HS_PRMS_20          HS_PRMS        Hyperscale        8IM       20          VCores  True
+HS_MOPRMS_20        HS_MOPRMS      Hyperscale        8IH       20          VCores  True
+HS_DC_20            HS_DC          Hyperscale        DC        20          VCores  True
+HS_Gen5_24          HS_Gen5        Hyperscale        Gen5      24          VCores  True
+HS_S_Gen5_24        HS_S_Gen5      Hyperscale        Gen5      24          VCores  True
+HS_PRMS_24          HS_PRMS        Hyperscale        8IM       24          VCores  True
+HS_MOPRMS_24        HS_MOPRMS      Hyperscale        8IH       24          VCores  True
+HS_Gen5_32          HS_Gen5        Hyperscale        Gen5      32          VCores  True
+HS_S_Gen5_32        HS_S_Gen5      Hyperscale        Gen5      32          VCores  True
+HS_PRMS_32          HS_PRMS        Hyperscale        8IM       32          VCores  True
+HS_MOPRMS_32        HS_MOPRMS      Hyperscale        8IH       32          VCores  True
+HS_DC_32            HS_DC          Hyperscale        DC        32          VCores  True
+HS_Gen5_40          HS_Gen5        Hyperscale        Gen5      40          VCores  True
+HS_S_Gen5_40        HS_S_Gen5      Hyperscale        Gen5      40          VCores  True
+HS_PRMS_40          HS_PRMS        Hyperscale        8IM       40          VCores  True
+HS_MOPRMS_40        HS_MOPRMS      Hyperscale        8IH       40          VCores  True
+HS_DC_40            HS_DC          Hyperscale        DC        40          VCores  True
+HS_PRMS_64          HS_PRMS        Hyperscale        8IM       64          VCores  True
+HS_MOPRMS_64        HS_MOPRMS      Hyperscale        8IH       64          VCores  True
+HS_Gen5_80          HS_Gen5        Hyperscale        Gen5      80          VCores  True
+HS_S_Gen5_80        HS_S_Gen5      Hyperscale        Gen5      80          VCores  True
+HS_PRMS_80          HS_PRMS        Hyperscale        8IM       80          VCores  True
+HS_MOPRMS_80        HS_MOPRMS      Hyperscale        8IH       80          VCores  True
+HS_PRMS_128         HS_PRMS        Hyperscale        8IM       128         VCores  True
+```
