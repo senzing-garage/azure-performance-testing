@@ -73,9 +73,16 @@ az container attach --resource-group sz-rg-senzing --name sz-init-database
 az container show --resource-group sz-rg-senzing --name sz-init-database
 ```
 
-### Database SKUs
+### Attach to running container:
 
-- https://learn.microsoft.com/en-us/dotnet/api/azure.resourcemanager.sql.sqldatabasedata.sku?view=azure-dotnet
+```
+az container exec
+```
+
+### Database
+
+- az database commands: https://learn.microsoft.com/en-us/cli/azure/sql/db?view=azure-cli-latest
+- SKUs: https://learn.microsoft.com/en-us/dotnet/api/azure.resourcemanager.sql.sqldatabasedata.sku?view=azure-dotnet
 
 
 #### get the database config [default database config](#default-database-config)
