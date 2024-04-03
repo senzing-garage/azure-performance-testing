@@ -193,8 +193,10 @@ resource "azurerm_container_group" "cg" {
   name                = "${random_pet.rg_name.id}-cg"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
-  ip_address_type     = "Public"
-  dns_name_label      = "${random_pet.rg_name.id}-cg"
+  ip_address_type     = "Private"
+  subnet_ids = azurerm_subnet.sz_subnet_1[*].id
+  # ip_address_type     = "Public"
+  # dns_name_label      = "${random_pet.rg_name.id}-cg"
   os_type             = "Linux"
   depends_on          = [azurerm_mssql_database.db]
   diagnostics {
@@ -239,14 +241,33 @@ resource "azurerm_container_group" "cg" {
   # }
 
   container {
-    name   = "hw"
-    image  = "mcr.microsoft.com/azuredocs/aci-helloworld:latest"
+    name  = "senzingapi-tools"
+    image = "docker.io/senzing/senzingapi-tools:3.9.0"
     cpu    = "0.5"
     memory = "1.5"
+    # ports {
+    #   port     = 80
+    #   protocol = "TCP"
+    # }
 
-    ports {
-      port     = 80
-      protocol = "TCP"
+    environment_variables = {
+      SENZING_TOOLS_ENGINE_CONFIGURATION_JSON = <<EOT
+        {
+            "PIPELINE": {
+                "CONFIGPATH": "/etc/opt/senzing",
+                "LICENSESTRINGBASE64": "{license_string}",
+                "RESOURCEPATH": "/opt/senzing/g2/resources",
+                "SUPPORTPATH": "/opt/senzing/data"
+            },
+            "SQL": {
+                "BACKEND": "SQL",
+                "CONNECTION" : "mssql://${azurerm_mssql_server.server.administrator_login}:${local.db_admin_password}@${azurerm_mssql_server.server.fully_qualified_domain_name}:1433/${azurerm_mssql_database.db.name}"
+            }
+        }
+      EOT
+      LC_CTYPE                                = "en_US.utf8"
+      SENZING_SUBCOMMAND                      = "mandatory"
+      SENZING_DEBUG                           = "False"
     }
     volume {
       name = "logs"
@@ -257,6 +278,34 @@ resource "azurerm_container_group" "cg" {
       storage_account_key  = azurerm_storage_account.sz_storage_account.primary_access_key
     }
   }
+
+# Error: creating Container Group (Subscription: "5415bf99-6956-43fd-a8a9-434c958ca13c"
+# │ Resource Group Name: "sz-sterling-oyster-rg"
+# │ Container Group Name: "sz-sterling-oyster-cg"): performing ContainerGroupsCreateOrUpdate: containerinstance.ContainerInstanceClient#ContainerGroupsCreateOrUpdate: Failure sending request: StatusCode=0 -- Original Error: Code="MissingIpAddressPorts" Message="The ports in the 'ipAddress' of container group 'sz-sterling-oyster-cg' cannot be empty."
+# │
+# │   with azurerm_container_group.cg,
+# │   on main.tf line 192, in resource "azurerm_container_group" "cg":
+# │  192: resource "azurerm_container_group" "cg" {
+
+  # container {
+  #   name   = "hw"
+  #   image  = "mcr.microsoft.com/azuredocs/aci-helloworld:latest"
+  #   cpu    = "0.5"
+  #   memory = "1.5"
+
+  #   ports {
+  #     port     = 80
+  #     protocol = "TCP"
+  #   }
+  #   volume {
+  #     name = "logs"
+  #     mount_path = "/mnt/logs"
+  #     read_only = false
+  #     share_name = azurerm_storage_share.sz_share.name
+  #     storage_account_name = azurerm_storage_account.sz_storage_account.name
+  #     storage_account_key  = azurerm_storage_account.sz_storage_account.primary_access_key
+  #   }
+  # }
 
   tags = {
     environment = "testing"

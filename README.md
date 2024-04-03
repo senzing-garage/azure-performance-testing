@@ -76,7 +76,7 @@ az container show --resource-group sz-rg-senzing --name sz-init-database
 ### Attach to running container:
 
 ```
-az container exec
+az container attach --name sz-equipped-muskox-cg --resource-group sz-equipped-muskox-rg --container-name senzingapi-tools
 ```
 
 ### Database
