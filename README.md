@@ -84,9 +84,65 @@ az containerapp logs show --resource-group sz-$AZURE_ANIMAL-rg --name sz-$AZURE_
 ### Attach to running container in a container app:
 
 ```
-export AZURE_ANIMAL=social-kit
+export AZURE_ANIMAL=literate-sunbird
 az containerapp exec --name sz-$AZURE_ANIMAL-ca --resource-group sz-$AZURE_ANIMAL-rg --container sz-$AZURE_ANIMAL-senzingapi-tools
 ```
+
+#### inside Senzing container:
+
+- REF: https://learn.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-ver16&tabs=debian18-install%2Cdebian17-install%2Cdebian8-install%2Credhat7-13-install%2Crhel7-offline
+
+Assumers that two environment vars are set in the container:
+- AZURE_ANIMAL = sz-random-animal # used to name all azure resources uniquely, including the database
+- SENZING_DB_PWD = un-encoded database password.  used for the sqlcmd command
+
+```
+# install MS drivers and tools (tools are only needed IF initializing the database)
+/bin/bash
+wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg \
+&& wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+&& apt-get update \
+&& ACCEPT_EULA=Y apt-get -y install msodbcsql17 \
+&& ACCEPT_EULA=Y apt-get -y install mssql-tools
+echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+source ~/.bashrc
+
+# Senzing database initialization
+wget -qO - https://raw.githubusercontent.com/senzing-garage/init-database/main/rootfs/opt/senzing/g2/resources/schema/g2core-schema-mssql-create.sql > /tmp/g2core-schema-mssql-create.sql
+
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -i /tmp/g2core-schema-mssql-create.sql -o /tmp/schema.out
+
+echo "addDataSource CUSTOMERS" > /tmp/add.sz
+echo "addDataSource REFERENCE" >> /tmp/add.sz
+echo "addDataSource WATCHLIST" >> /tmp/add.sz
+echo "save" >> /tmp/add.sz
+
+G2ConfigTool.py -f /tmp/add.sz
+```
+
+mssql://senzing:fsiPYFJ5Ee{DZm?z){_h@sz-social-kit-mssql-server.database.windows.net:1433:G2
+sqlcmd -S sz-$AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "fsiPYFJ5Ee{DZm?z){_h" -I
+sqlcmd -S sz-$AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT name FROM sys.tables;"
+sqlcmd -S sz-$AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "fsiPYFJ5Ee{DZm?z){_h" -i /tmp/q.sql -o /tmp/q.out
+
+```
+{
+            "PIPELINE": {
+                "CONFIGPATH": "/etc/opt/senzing",
+                "LICENSESTRINGBASE64": "{license_string}",
+                "RESOURCEPATH": "/opt/senzing/g2/resources",
+                "SUPPORTPATH": "/opt/senzing/data"
+            },
+            "SQL": {
+                "BACKEND": "SQL",
+                "CONNECTION" : "mssql://senzing:fsiPYFJ5Ee%7BDZm%3Fz%29%7B_h@sz-social-kit-mssql-server.database.windows.net:1433:G2"
+            }
+        }
+
+export SENZING_ENGINE_CONFIGURATION_JSON='{"PIPELINE": {"CONFIGPATH": "/etc/opt/senzing","LICENSESTRINGBASE64": "{license_string}","RESOURCEPATH": "/opt/senzing/g2/resources","SUPPORTPATH": "/opt/senzing/data"},"SQL": {"BACKEND": "SQL","CONNECTION" : "mssql://senzing:fsiPYFJ5Ee%7BDZm%3Fz%29%7B_h@sz-social-kit-mssql-server.database.windows.net:1433:G2"} }'
+```
+
+
 
 ### Database
 
@@ -108,6 +164,8 @@ az sql db show --name G2 --resource-group sz-$AZURE_ANIMAL-rg --server sz-$AZURE
 ```
 az sql db list-editions -l westus -o table
 ```
+
+
 
 ## Terraform
 
