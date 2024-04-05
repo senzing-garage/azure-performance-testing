@@ -84,7 +84,7 @@ az containerapp logs show --resource-group sz-$AZURE_ANIMAL-rg --name sz-$AZURE_
 ### Attach to running container in a container app:
 
 ```
-export AZURE_ANIMAL=literate-sunbird
+export AZURE_ANIMAL=bright-piglet
 az containerapp exec --name sz-$AZURE_ANIMAL-ca --resource-group sz-$AZURE_ANIMAL-rg --container sz-$AZURE_ANIMAL-senzingapi-tools
 ```
 
@@ -122,7 +122,7 @@ G2ConfigTool.py -f /tmp/add.sz
 
 mssql://senzing:fsiPYFJ5Ee{DZm?z){_h@sz-social-kit-mssql-server.database.windows.net:1433:G2
 sqlcmd -S sz-$AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "fsiPYFJ5Ee{DZm?z){_h" -I
-sqlcmd -S sz-$AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT name FROM sys.tables;"
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT name FROM sys.tables;"
 sqlcmd -S sz-$AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "fsiPYFJ5Ee{DZm?z){_h" -i /tmp/q.sql -o /tmp/q.out
 
 ```

@@ -24,11 +24,11 @@ resource "azurerm_mssql_firewall_rule" "firewall" {
 resource "random_password" "db_admin_password" {
   count       = var.db_admin_password == null ? 1 : 0
   length      = 20
-  special     = true
+  special     = false
   min_numeric = 1
   min_upper   = 1
   min_lower   = 1
-  min_special = 1
+  min_special = 0
 }
 
 locals {

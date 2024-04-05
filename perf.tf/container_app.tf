@@ -67,7 +67,7 @@ resource "azurerm_container_app" "sz_perf_app" {
       image  = "docker.io/senzing/senzingapi-tools:3.9.0"
       cpu    = 0.5
       memory = "1Gi"
-      command = ["/bin/bash", "-c", "wget -qO - https://raw.githubusercontent.com/senzing-garage/init-database/main/rootfs/opt/senzing/g2/resources/schema/g2core-schema-mssql-create.sql > /tmp/g2core-schema-mssql-create.sql;while true; do echo hello $(date); sleep 1000;done"]
+      command = ["/bin/bash", "-c", var.db_init_command]
       env {
         name  = "SENZING_ENGINE_CONFIGURATION_JSON"
         value = <<EOT
