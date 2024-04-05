@@ -84,7 +84,7 @@ az containerapp logs show --resource-group sz-$AZURE_ANIMAL-rg --name sz-$AZURE_
 ### Attach to running container in a container app:
 
 ```
-export AZURE_ANIMAL=electric-mustang
+export AZURE_ANIMAL=social-kit
 az containerapp exec --name sz-$AZURE_ANIMAL-ca --resource-group sz-$AZURE_ANIMAL-rg --container sz-$AZURE_ANIMAL-senzingapi-tools
 ```
 
