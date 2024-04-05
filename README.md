@@ -76,16 +76,16 @@ az container show --resource-group sz-rg-senzing --name sz-init-database
 ### See logs of a container app:
 
 ```
-export AZURE_ANIMAL=sensible-dodo
-az containerapp logs show --resource-group sz-$AZURE_ANIMAL-rg --name sz-$AZURE_ANIMAL-ca --follow
-az containerapp logs show --resource-group sz-$AZURE_ANIMAL-rg --name sz-$AZURE_ANIMAL-ca --container sz-$AZURE_ANIMAL-debian
+export AZURE_ANIMAL=sz-sensible-dodo
+az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-ca --follow
+az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-ca --container $AZURE_ANIMAL-debian
 ```
 
 ### Attach to running container in a container app:
 
 ```
-export AZURE_ANIMAL=bright-piglet
-az containerapp exec --name sz-$AZURE_ANIMAL-ca --resource-group sz-$AZURE_ANIMAL-rg --container sz-$AZURE_ANIMAL-senzingapi-tools
+export AZURE_ANIMAL=sz-maximum-mite
+az containerapp exec --name $AZURE_ANIMAL-ca --resource-group $AZURE_ANIMAL-rg --container $AZURE_ANIMAL-senzingapi-tools
 ```
 
 #### inside Senzing container:
@@ -121,9 +121,9 @@ G2ConfigTool.py -f /tmp/add.sz
 ```
 
 mssql://senzing:fsiPYFJ5Ee{DZm?z){_h@sz-social-kit-mssql-server.database.windows.net:1433:G2
-sqlcmd -S sz-$AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "fsiPYFJ5Ee{DZm?z){_h" -I
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "fsiPYFJ5Ee{DZm?z){_h" -I
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT name FROM sys.tables;"
-sqlcmd -S sz-$AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "fsiPYFJ5Ee{DZm?z){_h" -i /tmp/q.sql -o /tmp/q.out
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "fsiPYFJ5Ee{DZm?z){_h" -i /tmp/q.sql -o /tmp/q.out
 
 ```
 {
@@ -156,7 +156,7 @@ export SENZING_ENGINE_CONFIGURATION_JSON='{"PIPELINE": {"CONFIGPATH": "/etc/opt/
 
 ```
 export AZURE_ANIMAL=exciting-hawk
-az sql db show --name G2 --resource-group sz-$AZURE_ANIMAL-rg --server sz-$AZURE_ANIMAL-mssql-server
+az sql db show --name G2 --resource-group $AZURE_ANIMAL-rg --server $AZURE_ANIMAL-mssql-server
 ```
 
 #### available SKUs [Westus list](#available-skus-for-westus)
