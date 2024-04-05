@@ -60,20 +60,9 @@ $ export ARM_TENANT_ID="<tenantId>"
 az account get-access-token
 ```
 
-### Looking at container logs for container instances:
-
-- https://learn.microsoft.com/en-us/azure/container-instances/container-instances-get-logs
-
-```
-az container logs --resource-group myResourceGroup --name mycontainer
-az container logs --resource-group sz-rg-senzing --name sz-init-database
-
-az container attach --resource-group myResourceGroup --name mycontainer
-az container attach --resource-group sz-rg-senzing --name sz-init-database
-az container show --resource-group sz-rg-senzing --name sz-init-database
-```
-
 ### See logs of a container app:
+
+- Ref: https://learn.microsoft.com/en-us/cli/azure/containerapp/logs?view=azure-cli-latest
 
 ```
 export AZURE_ANIMAL=sz-sensible-dodo

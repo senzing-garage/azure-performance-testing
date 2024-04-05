@@ -12,20 +12,6 @@ resource "azurerm_container_app" "sz_perf_app" {
   resource_group_name          = azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
-  # registry {
-  #   server = "docker.io"
-  # }
-
-  # ingress {
-  #   allow_insecure_connections = false
-  #   external_enabled           = true
-  #   target_port                = 80
-  #   traffic_weight {
-  #     percentage = 100
-  #   }
-
-  # }
-
   template {
     # init_container {
     #   name  = "${random_pet.rg_name.id}-init-database"
@@ -68,6 +54,7 @@ resource "azurerm_container_app" "sz_perf_app" {
       cpu    = 0.5
       memory = "1Gi"
       command = ["/bin/bash", "-c", var.db_init_command]
+
       env {
         name  = "SENZING_ENGINE_CONFIGURATION_JSON"
         value = <<EOT
@@ -83,7 +70,7 @@ resource "azurerm_container_app" "sz_perf_app" {
                 "CONNECTION" : "mssql://${azurerm_mssql_server.server.administrator_login}:${urlencode(local.db_admin_password)}@${azurerm_mssql_server.server.fully_qualified_domain_name}:1433:${azurerm_mssql_database.db.name}"
             }
         }
-      EOT
+        EOT
       }
       env {
         name  = "LC_CTYPE"
@@ -106,42 +93,6 @@ resource "azurerm_container_app" "sz_perf_app" {
         value = random_pet.rg_name.id
       }
     }
-
-    # container {
-    #   name   = "${random_pet.rg_name.id}-debian"
-    #   image  = "docker.io/debian:latest"
-    #   cpu    = 0.5
-    #   memory = "1Gi"
-    #   env {
-    #     name  = "SENZING_TOOLS_ENGINE_CONFIGURATION_JSON"
-    #     value = <<EOT
-    #     {
-    #         "PIPELINE": {
-    #             "CONFIGPATH": "/etc/opt/senzing",
-    #             "LICENSESTRINGBASE64": "{license_string}",
-    #             "RESOURCEPATH": "/opt/senzing/g2/resources",
-    #             "SUPPORTPATH": "/opt/senzing/data"
-    #         },
-    #         "SQL": {
-    #             "BACKEND": "SQL",
-    #             "CONNECTION" : "mssql://${azurerm_mssql_server.server.administrator_login}:${local.db_admin_password}@${azurerm_mssql_server.server.fully_qualified_domain_name}:1433/${azurerm_mssql_database.db.name}"
-    #         }
-    #     }
-    #   EOT
-    #   }
-    #   env {
-    #     name  = "LC_CTYPE"
-    #     value = "en_US.utf8"
-    #   }
-    #   env {
-    #     name  = "SENZING_SUBCOMMAND"
-    #     value = "mandatory"
-    #   }
-    #   env {
-    #     name  = "SENZING_DEBUG"
-    #     value = "False"
-    #   }
-    # }
   }
 }
 
