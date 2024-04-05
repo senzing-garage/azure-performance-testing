@@ -92,9 +92,9 @@ az containerapp exec --name sz-$AZURE_ANIMAL-ca --resource-group sz-$AZURE_ANIMA
 
 - REF: https://learn.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-ver16&tabs=debian18-install%2Cdebian17-install%2Cdebian8-install%2Credhat7-13-install%2Crhel7-offline
 
-Assumers that two environment vars are set in the container:
+Assumes that two environment vars are set in the container:
 - AZURE_ANIMAL = sz-random-animal # used to name all azure resources uniquely, including the database
-- SENZING_DB_PWD = un-encoded database password.  used for the sqlcmd command
+- SENZING_DB_PWD = un-encoded database password.  used for the `sqlcmd` command
 
 ```
 # install MS drivers and tools (tools are only needed IF initializing the database)
