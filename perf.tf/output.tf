@@ -16,10 +16,10 @@ output "db_admin_password" {
 }
 
 output "ip_address" {
-  value = azurerm_container_group.cg.ip_address
+  value = azurerm_container_app.sz_perf_app.outbound_ip_addresses
 }
 
 #the dns fqdn of the container group if dns_name_label is set
 output "fqdn" {
-  value = azurerm_container_group.cg.fqdn
+  value = azurerm_container_app.sz_perf_app.latest_revision_fqdn
 }

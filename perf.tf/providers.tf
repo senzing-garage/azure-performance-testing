@@ -21,3 +21,4 @@ provider "azurerm" {
   # client_secret     = "${env.ARM_CLIENT_SECRET}"
 }
 
+

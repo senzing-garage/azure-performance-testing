@@ -60,7 +60,7 @@ $ export ARM_TENANT_ID="<tenantId>"
 az account get-access-token
 ```
 
-### Looking at container logs:
+### Looking at container logs for container instances:
 
 - https://learn.microsoft.com/en-us/azure/container-instances/container-instances-get-logs
 
@@ -73,10 +73,19 @@ az container attach --resource-group sz-rg-senzing --name sz-init-database
 az container show --resource-group sz-rg-senzing --name sz-init-database
 ```
 
-### Attach to running container:
+### See logs of a container app:
 
 ```
-az container attach --name sz-equipped-muskox-cg --resource-group sz-equipped-muskox-rg --container-name senzingapi-tools
+export AZURE_ANIMAL=sensible-dodo
+az containerapp logs show --resource-group sz-$AZURE_ANIMAL-rg --name sz-$AZURE_ANIMAL-ca --follow
+az containerapp logs show --resource-group sz-$AZURE_ANIMAL-rg --name sz-$AZURE_ANIMAL-ca --container sz-$AZURE_ANIMAL-debian
+```
+
+### Attach to running container in a container app:
+
+```
+export AZURE_ANIMAL=electric-mustang
+az containerapp exec --name sz-$AZURE_ANIMAL-ca --resource-group sz-$AZURE_ANIMAL-rg --container sz-$AZURE_ANIMAL-senzingapi-tools
 ```
 
 ### Database
@@ -90,7 +99,8 @@ az container attach --name sz-equipped-muskox-cg --resource-group sz-equipped-mu
 - ref: https://learn.microsoft.com/en-us/cli/azure/sql/db?view=azure-cli-latest#az-sql-db-show
 
 ```
-az sql db show --name G2 --resource-group sz-possible-filly-rg --server sz-possible-filly-mssql-server
+export AZURE_ANIMAL=exciting-hawk
+az sql db show --name G2 --resource-group sz-$AZURE_ANIMAL-rg --server sz-$AZURE_ANIMAL-mssql-server
 ```
 
 #### available SKUs [Westus list](#available-skus-for-westus)
