@@ -39,8 +39,8 @@ variable "db_init_command" {
       ACCEPT_EULA=Y apt-get -y install msodbcsql17 mssql-tools
       echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
       source ~/.bashrc
-      wget -qO - https://raw.githubusercontent.com/senzing-garage/init-database/main/rootfs/opt/senzing/g2/resources/schema/g2core-schema-mssql-create.sql > /tmp/g2core-schema-mssql-create.sql
-      sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -i /tmp/g2core-schema-mssql-create.sql -o /tmp/schema.out
+      apt-get -y install senzingapi-setup
+      sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -i /opt/senzing/g2/resources/schema/g2core-schema-mssql-create.sql -o /tmp/schema.out
       echo "addDataSource CUSTOMERS" > /tmp/add.sz
       echo "addDataSource REFERENCE" >> /tmp/add.sz
       echo "addDataSource WATCHLIST" >> /tmp/add.sz
@@ -49,4 +49,3 @@ variable "db_init_command" {
       while true; do echo grumble $(date); sleep 600;done
   EOT
 }
-
