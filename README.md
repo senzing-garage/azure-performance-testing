@@ -60,6 +60,19 @@ $ export ARM_TENANT_ID="<tenantId>"
 az account get-access-token
 ```
 
+## Azure container apps:
+
+Total CPU and memory for all containers defined in a Container App must add up to one of the following CPU - Memory combinations:
+
+- [cpu: 0.25, memory: 0.5Gi]
+- [cpu: 0.5, memory: 1.0Gi]
+- [cpu: 0.75, memory: 1.5Gi]
+- [cpu: 1.0, memory: 2.0Gi]
+- [cpu: 1.25, memory: 2.5Gi]
+- [cpu: 1.5, memory: 3.0Gi]
+- [cpu: 1.75, memory: 3.5Gi]
+- [cpu: 2.0, memory: 4.0Gi]
+
 ### See logs of a container app:
 
 - Ref: https://learn.microsoft.com/en-us/cli/azure/containerapp/logs?view=azure-cli-latest
@@ -73,8 +86,12 @@ az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL
 ### Attach to running container in a container app:
 
 ```
-export AZURE_ANIMAL=sz-unbiased-flea
+export AZURE_ANIMAL=sz-hot-fowl
 az containerapp exec --name $AZURE_ANIMAL-ca --resource-group $AZURE_ANIMAL-rg --container $AZURE_ANIMAL-senzingapi-tools
+
+export AZURE_ANIMAL=sz-hot-fowl
+az containerapp exec --name $AZURE_ANIMAL-ca --resource-group $AZURE_ANIMAL-rg --container $AZURE_ANIMAL-senzing-producer
+
 ```
 
 #### inside Senzing container:
@@ -155,7 +172,7 @@ export SENZING_ENGINE_CONFIGURATION_JSON='{"PIPELINE": {"CONFIGPATH": "/etc/opt/
 - ref: https://learn.microsoft.com/en-us/cli/azure/sql/db?view=azure-cli-latest#az-sql-db-show
 
 ```
-export AZURE_ANIMAL=exciting-hawk
+export AZURE_ANIMAL=sz-exciting-hawk
 az sql db show --name G2 --resource-group $AZURE_ANIMAL-rg --server $AZURE_ANIMAL-mssql-server
 ```
 
