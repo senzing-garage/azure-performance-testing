@@ -23,3 +23,12 @@ output "ip_address" {
 output "fqdn" {
   value = azurerm_container_app.sz_perf_app.latest_revision_fqdn
 }
+
+output "queue_name" {
+  value = azurerm_servicebus_queue.sz_queue.name
+}
+
+output "queue_connection_string" {
+  sensitive = true
+  value = azurerm_servicebus_namespace.sz_service_bus.default_primary_connection_string
+}

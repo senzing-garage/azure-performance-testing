@@ -165,8 +165,13 @@ terraform init -upgrade
 terraform validate
 terraform plan -out main.tfplan
 terraform apply main.tfplan
+```
 
+Get the sensitive outputs from the terraform plan:
+
+```
 terraform output -json | jq -r ".db_admin_password.value"
+terraform output -json | jq -r ".queue_connection_string.value"
 ```
 
 Other terraform things to play with:
@@ -185,6 +190,18 @@ To destroy the resources, in the `perf.tf` directory:
 terraform plan -destroy -out main.destroy.tfplan
 terraform apply main.destroy.tfplan
 ```
+
+## Azure queue
+
+sub-command for stream producer: gzipped-json-to-azure-queue
+
+terraform import azurerm_servicebus_namespace.example /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/mygroup1/providers/Microsoft.ServiceBus/namespaces/sbns1
+
+
+Host name: sz-welcome-turtle-service-bus.servicebus.windows.net
+"serviceBusEndpoint": "https://sz-welcome-turtle-service-bus.servicebus.windows.net:443/",
+"id": "/subscriptions/5415bf99-6956-43fd-a8a9-434c958ca13c/resourceGroups/sz-welcome-turtle-rg/providers/Microsoft.ServiceBus/namespaces/sz-welcome-turtle-service-bus",
+
 
 ### NOTES:
 
