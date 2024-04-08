@@ -86,11 +86,8 @@ az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL
 ### Attach to running container in a container app:
 
 ```
-export AZURE_ANIMAL=sz-hot-fowl
+export AZURE_ANIMAL=sz-crack-gnat
 az containerapp exec --name $AZURE_ANIMAL-ca --resource-group $AZURE_ANIMAL-rg --container $AZURE_ANIMAL-senzingapi-tools
-
-export AZURE_ANIMAL=sz-hot-fowl
-az containerapp exec --name $AZURE_ANIMAL-ca --resource-group $AZURE_ANIMAL-rg --container $AZURE_ANIMAL-senzing-producer
 
 ```
 
@@ -137,10 +134,6 @@ echo "save" >> /tmp/add.sz
 G2ConfigTool.py -f /tmp/add.sz
 ```
 
-mssql://senzing:fsiPYFJ5Ee{DZm?z){_h@sz-social-kit-mssql-server.database.windows.net:1433:G2
-sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "fsiPYFJ5Ee{DZm?z){_h" -I
-sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT name FROM sys.tables;"
-sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "fsiPYFJ5Ee{DZm?z){_h" -i /tmp/q.sql -o /tmp/q.out
 
 ```
 {
@@ -182,7 +175,13 @@ az sql db show --name G2 --resource-group $AZURE_ANIMAL-rg --server $AZURE_ANIMA
 az sql db list-editions -l westus -o table
 ```
 
+#### inside senzing container:
 
+```
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT name FROM sys.tables;"
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -i /tmp/q.sql -o /tmp/q.out
+```
 
 ## Terraform
 
