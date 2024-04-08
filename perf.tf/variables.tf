@@ -1,3 +1,15 @@
+variable "number_of_records" {
+  type        = string
+  description = "Number of records to put into the queue for processing"
+  default     = "100"
+}
+
+variable "test_data_url" {
+  type        = string
+  description = "URL for the test data set."
+  default     = "https://public-read-access.s3.amazonaws.com/TestDataSets/test-dataset-100m.json.gz"
+}
+
 variable "prefix" {
   type        = string
   description = "Prefix for all resources."
