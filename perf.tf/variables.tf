@@ -4,6 +4,18 @@ variable "number_of_records" {
   default     = "100"
 }
 
+variable "senzingapi-tools-image" {
+  type        = string
+  description = "Repo for the Senzing API Tools image"
+  default     = "docker.io/senzing/senzingapi-tools:3.9.0"
+}
+
+variable "senzing-producer-image" {
+  type        = string
+  description = "Repo for the Senzing producer image"
+  default     = "docker.io/senzing/stream-producer:1.8.7"
+}
+
 variable "test_data_url" {
   type        = string
   description = "URL for the test data set."
@@ -41,6 +53,20 @@ variable "db_admin_password" {
   default     = null
 }
 
+variable "use_mstools_init_command" {
+  type        = string
+  description = "Command to install drivers in order to use Senzing."
+  default     = <<EOT
+      wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg
+      wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list
+      apt-get update
+      ACCEPT_EULA=Y apt-get -y install msodbcsql17 mssql-tools
+      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+      source ~/.bashrc
+      while true; do echo grumble $(date); sleep 600;done
+  EOT
+}
+
 variable "db_init_command" {
   type        = string
   description = "Command to initialize the database."
@@ -58,6 +84,7 @@ variable "db_init_command" {
       echo "addDataSource WATCHLIST" >> /tmp/add.sz
       echo "save" >> /tmp/add.sz
       G2ConfigTool.py -f /tmp/add.sz
-      while true; do echo grumble $(date); sleep 600;done
   EOT
 }
+
+      # while true; do echo grumble $(date); sleep 600;done

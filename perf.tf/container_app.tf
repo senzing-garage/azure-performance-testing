@@ -13,44 +13,9 @@ resource "azurerm_container_app" "sz_perf_app" {
   revision_mode                = "Single"
 
   template {
-    # init_container {
-    #   name  = "${random_pet.rg_name.id}-init-database"
-    #   image = "docker.io/senzing/init-database:0.5.2"
-    #   cpu   = 0.25
-    #   env {
-    #     name  = "SENZING_TOOLS_ENGINE_CONFIGURATION_JSON"
-    #     value = <<EOT
-    #     {
-    #         "PIPELINE": {
-    #             "CONFIGPATH": "/etc/opt/senzing",
-    #             "LICENSESTRINGBASE64": "{license_string}",
-    #             "RESOURCEPATH": "/opt/senzing/g2/resources",
-    #             "SUPPORTPATH": "/opt/senzing/data"
-    #         },
-    #         "SQL": {
-    #             "BACKEND": "SQL",
-    #             "CONNECTION" : "mssql://${azurerm_mssql_server.server.administrator_login}:${local.db_admin_password}@${azurerm_mssql_server.server.fully_qualified_domain_name}:1433:${azurerm_mssql_database.db.name}/?driver=mssqldriver"
-    #         }
-    #     }
-    #   EOT
-    #   }
-    #   env {
-    #     name  = "LC_CTYPE"
-    #     value = "en_US.utf8"
-    #   }
-    #   env {
-    #     name  = "SENZING_SUBCOMMAND"
-    #     value = "mandatory"
-    #   }
-    #   env {
-    #     name  = "SENZING_DEBUG"
-    #     value = "False"
-    #   }
-    # }
-
-    container {
-      name   = "${random_pet.rg_name.id}-senzingapi-tools"
-      image  = "docker.io/senzing/senzingapi-tools:3.9.0"
+    init_container {
+      name   = "${random_pet.rg_name.id}-init-database"
+      image  = var.senzingapi-tools-image
       cpu    = 0.5
       memory = "1Gi"
       command = ["/bin/bash", "-c", var.db_init_command]
@@ -94,12 +59,59 @@ resource "azurerm_container_app" "sz_perf_app" {
       }
     }
 
+
     container {
-      name   = "${random_pet.rg_name.id}-senzing-producer"
-      image  = "docker.io/senzing/senzingapi-tools:3.9.0"
+      name   = "${random_pet.rg_name.id}-senzingapi-tools"
+      image  = var.senzingapi-tools-image
       cpu    = 0.5
       memory = "1Gi"
-      command = ["/bin/bash", "-c", var.db_init_command]
+      command = ["/bin/bash", "-c", var.use_mstools_init_command]
+
+      env {
+        name  = "SENZING_ENGINE_CONFIGURATION_JSON"
+        value = <<EOT
+        {
+            "PIPELINE": {
+                "CONFIGPATH": "/etc/opt/senzing",
+                "LICENSESTRINGBASE64": "{license_string}",
+                "RESOURCEPATH": "/opt/senzing/g2/resources",
+                "SUPPORTPATH": "/opt/senzing/data"
+            },
+            "SQL": {
+                "BACKEND": "SQL",
+                "CONNECTION" : "mssql://${azurerm_mssql_server.server.administrator_login}:${urlencode(local.db_admin_password)}@${azurerm_mssql_server.server.fully_qualified_domain_name}:1433:${azurerm_mssql_database.db.name}"
+            }
+        }
+        EOT
+      }
+      env {
+        name  = "LC_CTYPE"
+        value = "en_US.utf8"
+      }
+      env {
+        name  = "SENZING_SUBCOMMAND"
+        value = "mandatory"
+      }
+      env {
+        name  = "SENZING_DEBUG"
+        value = "False"
+      }
+      env {
+        name  = "SENZING_DB_PWD"
+        value = local.db_admin_password
+      }
+      env {
+        name  = "AZURE_ANIMAL"
+        value = random_pet.rg_name.id
+      }
+    }
+
+    container {
+      name   = "${random_pet.rg_name.id}-senzing-producer"
+      image  = var.senzing-producer-image
+      cpu    = 2
+      memory = "4Gi"
+      # command = ["/bin/bash", "-c", var.db_init_command]
 
       env {
         name  = "SENZING_ENGINE_CONFIGURATION_JSON"
