@@ -65,8 +65,8 @@ resource "azurerm_container_app" "sz_perf_app" {
     init_container {
       name   = "${random_pet.rg_name.id}-senzing-producer"
       image  = var.senzing-producer-image
-      cpu    = 1
-      memory = "2.0Gi"
+      cpu    = 0.5
+      memory = "1.0Gi"
       # command = ["/bin/bash", "-c", "while true; do echo grumble $(date); sleep 600;done"]
 
       env {
