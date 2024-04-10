@@ -86,10 +86,9 @@ az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL
 ### Attach to running container in a container app:
 
 ```
-export AZURE_ANIMAL=sz-composed-eel
-az containerapp exec --name $AZURE_ANIMAL-init-database-ca --resource-group $AZURE_ANIMAL-rg --container $AZURE_ANIMAL-senzingapi-tools
-az containerapp exec --name $AZURE_ANIMAL-ca --resource-group $AZURE_ANIMAL-rg --container $AZURE_ANIMAL-senzingapi-tools
-
+export AZURE_ANIMAL=sz-engaging-egret
+az containerapp exec --name $AZURE_ANIMAL-ca --resource-group $AZURE_ANIMAL-rg --command bash --container $AZURE_ANIMAL-senzing-loader
+az containerapp exec --name $AZURE_ANIMAL-init-database-ca --resource-group $AZURE_ANIMAL-rg --command bash --container $AZURE_ANIMAL-senzingapi-tools
 ```
 
 #### inside Senzing container:

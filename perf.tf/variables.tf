@@ -16,6 +16,14 @@ variable "senzing-producer-image" {
   default     = "docker.io/senzing/stream-producer:1.8.7"
 }
 
+variable "senzing-loader-image" {
+  type        = string
+  description = "Repo for the Senzing loader image"
+  # default     = "docker.io/senzing/senzingapi-runtime:latest"
+  default     = "public.ecr.aws/senzing/stream-loader:staging"
+  # default     = "public.ecr.aws/senzing/sz_sqs_consumer:staging"
+}
+
 variable "test_data_url" {
   type        = string
   description = "URL for the test data set."
@@ -84,6 +92,43 @@ variable "db_init_command" {
       echo "addDataSource WATCHLIST" >> /tmp/add.sz
       echo "save" >> /tmp/add.sz
       G2ConfigTool.py -f /tmp/add.sz
+  EOT
+}
+
+variable "init_loader_command" {
+  type        = string
+  description = "Command to install drivers in order to use Senzing."
+  default     = <<EOT
+      wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg
+      wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list
+      apt-get update
+      ACCEPT_EULA=Y apt-get -y install msodbcsql17 mssql-tools
+      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+      source ~/.bashrc
+      while true; do echo grumble $(date); sleep 600;done
+  EOT
+}
+
+variable "init_sz_consumer_command" {
+  type        = string
+  description = "Command to install drivers in order to use Senzing."
+  default     = <<EOT
+      wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg
+      wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list
+      apt-get update
+      apt-get -y install python3 python3-pip python3-boto3 python3-psycopg2
+      python3 -mpip install orjson
+      apt-get -y remove build-essential python3-pip
+      apt-get -y autoremove
+      apt-get -y clean
+      mkdir /app
+      wget -qO - https://raw.githubusercontent.com/brianmacy/sz_sqs_consumer/main/sz_sqs_consumer.py > /app/sz_sqs_consumer.py
+      wget -qO - https://raw.githubusercontent.com/Senzing/governor-postgresql-transaction-id/main/senzing_governor.py > /app/senzing_governor.py
+      ACCEPT_EULA=Y apt-get -y install msodbcsql17 mssql-tools
+      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+      echo 'export PYTHONPATH="$PYTHONPATH:/opt/senzing/g2/sdk/python:/app"' >> ~/.bashrc
+      source ~/.bashrc
+      while true; do echo grumble $(date); sleep 600;done
   EOT
 }
 

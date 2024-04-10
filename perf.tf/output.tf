@@ -23,3 +23,7 @@ output "queue_connection_string" {
   sensitive = true
   value = azurerm_servicebus_namespace.sz_service_bus.default_primary_connection_string
 }
+
+output "azure_animal" {
+  value = random_pet.rg_name.id
+}

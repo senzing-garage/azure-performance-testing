@@ -1,3 +1,20 @@
+locals {
+  senzing_engine_configuration_json = <<EOT
+        {
+            "PIPELINE": {
+                "CONFIGPATH": "/etc/opt/senzing",
+                "LICENSESTRINGBASE64": "{license_string}",
+                "RESOURCEPATH": "/opt/senzing/g2/resources",
+                "SUPPORTPATH": "/opt/senzing/data"
+            },
+            "SQL": {
+                "BACKEND": "SQL",
+                "CONNECTION" : "mssql://${azurerm_mssql_server.server.administrator_login}:${urlencode(local.db_admin_password)}@${azurerm_mssql_server.server.fully_qualified_domain_name}:1433:${azurerm_mssql_database.db.name}"
+            }
+        }
+        EOT
+}
+
 resource "azurerm_container_app_environment" "sz_perf_app_env" {
   name                       = "${random_pet.rg_name.id}-cae"
   location                   = azurerm_resource_group.rg.location
@@ -8,7 +25,7 @@ resource "azurerm_container_app_environment" "sz_perf_app_env" {
 ######################################################
 # database initialization container app
 resource "azurerm_container_app" "sz_init_database_app" {
-  name = "${random_pet.rg_name.id}-init-database-ca"
+  name = "${random_pet.rg_name.id}-init-db-ca"
 
   container_app_environment_id = azurerm_container_app_environment.sz_perf_app_env.id
   resource_group_name          = azurerm_resource_group.rg.name
@@ -25,41 +42,28 @@ resource "azurerm_container_app" "sz_init_database_app" {
       command = ["/bin/bash", "-c", var.db_init_command]
 
       env {
-        name  = "SENZING_ENGINE_CONFIGURATION_JSON"
-        value = <<EOT
-        {
-            "PIPELINE": {
-                "CONFIGPATH": "/etc/opt/senzing",
-                "LICENSESTRINGBASE64": "{license_string}",
-                "RESOURCEPATH": "/opt/senzing/g2/resources",
-                "SUPPORTPATH": "/opt/senzing/data"
-            },
-            "SQL": {
-                "BACKEND": "SQL",
-                "CONNECTION" : "mssql://${azurerm_mssql_server.server.administrator_login}:${urlencode(local.db_admin_password)}@${azurerm_mssql_server.server.fully_qualified_domain_name}:1433:${azurerm_mssql_database.db.name}"
-            }
-        }
-        EOT
+        name  = "AZURE_ANIMAL"
+        value = random_pet.rg_name.id
       }
       env {
         name  = "LC_CTYPE"
         value = "en_US.utf8"
       }
       env {
-        name  = "SENZING_SUBCOMMAND"
-        value = "mandatory"
+        name  = "SENZING_DB_PWD"
+        value = local.db_admin_password
       }
       env {
         name  = "SENZING_DEBUG"
         value = "False"
       }
       env {
-        name  = "SENZING_DB_PWD"
-        value = local.db_admin_password
+        name  = "SENZING_ENGINE_CONFIGURATION_JSON"
+        value = local.senzing_engine_configuration_json
       }
       env {
-        name  = "AZURE_ANIMAL"
-        value = random_pet.rg_name.id
+        name  = "SENZING_SUBCOMMAND"
+        value = "mandatory"
       }
     }
 
@@ -72,12 +76,20 @@ resource "azurerm_container_app" "sz_init_database_app" {
       # command = ["/bin/bash", "-c", "while true; do echo grumble $(date); sleep 600;done"]
 
       env {
+        name  = "AZURE_ANIMAL"
+        value = random_pet.rg_name.id
+      }
+      env {
         name  = "LC_CTYPE"
         value = "en_US.utf8"
       }
       env {
-        name  = "AZURE_ANIMAL"
-        value = random_pet.rg_name.id
+        name = "SENZING_AZURE_QUEUE_CONNECTION_STRING"
+        value = azurerm_servicebus_namespace.sz_service_bus.default_primary_connection_string
+      }
+      env {
+        name = "SENZING_AZURE_QUEUE_NAME"
+        value = azurerm_servicebus_queue.sz_queue.name
       }
       env {
         name = "SENZING_DEFAULT_DATA_SOURCE"
@@ -116,14 +128,6 @@ resource "azurerm_container_app" "sz_init_database_app" {
         value = "1"
       }
       env {
-        name = "SENZING_AZURE_QUEUE_CONNECTION_STRING"
-        value = azurerm_servicebus_namespace.sz_service_bus.default_primary_connection_string
-      }
-      env {
-        name = "SENZING_AZURE_QUEUE_NAME"
-        value = azurerm_servicebus_queue.sz_queue.name
-      }
-      env {
         name = "SENZING_SUBCOMMAND"
         value = "gzipped-json-to-azure-queue"
       }
@@ -142,29 +146,12 @@ resource "azurerm_container_app" "sz_init_database_app" {
       command = ["/bin/bash", "-c", var.use_mstools_init_command]
 
       env {
-        name  = "SENZING_ENGINE_CONFIGURATION_JSON"
-        value = <<EOT
-        {
-            "PIPELINE": {
-                "CONFIGPATH": "/etc/opt/senzing",
-                "LICENSESTRINGBASE64": "{license_string}",
-                "RESOURCEPATH": "/opt/senzing/g2/resources",
-                "SUPPORTPATH": "/opt/senzing/data"
-            },
-            "SQL": {
-                "BACKEND": "SQL",
-                "CONNECTION" : "mssql://${azurerm_mssql_server.server.administrator_login}:${urlencode(local.db_admin_password)}@${azurerm_mssql_server.server.fully_qualified_domain_name}:1433:${azurerm_mssql_database.db.name}"
-            }
-        }
-        EOT
+        name  = "AZURE_ANIMAL"
+        value = random_pet.rg_name.id
       }
       env {
         name  = "LC_CTYPE"
         value = "en_US.utf8"
-      }
-      env {
-        name  = "SENZING_SUBCOMMAND"
-        value = "mandatory"
       }
       env {
         name  = "SENZING_DEBUG"
@@ -175,12 +162,14 @@ resource "azurerm_container_app" "sz_init_database_app" {
         value = local.db_admin_password
       }
       env {
-        name  = "AZURE_ANIMAL"
-        value = random_pet.rg_name.id
+        name  = "SENZING_ENGINE_CONFIGURATION_JSON"
+        value = local.senzing_engine_configuration_json
+      }
+      env {
+        name  = "SENZING_SUBCOMMAND"
+        value = "mandatory"
       }
     }
-
-
   }
 }
 
@@ -267,51 +256,72 @@ resource "azurerm_container_app" "sz_perf_app" {
 
     # Senzing API Tools, used to inspect the database and run tool commands
     container {
-      name   = "${random_pet.rg_name.id}-senzingapi-tools"
-      image  = var.senzingapi-tools-image
+      name   = "${random_pet.rg_name.id}-senzing-loader"
+      image  = var.senzing-loader-image
       cpu    = 0.5
       memory = "1.0Gi"
-      command = ["/bin/bash", "-c", var.use_mstools_init_command]
+      command = ["/bin/bash", "-c", var.init_loader_command]
 
       env {
-        name  = "SENZING_ENGINE_CONFIGURATION_JSON"
-        value = <<EOT
-        {
-            "PIPELINE": {
-                "CONFIGPATH": "/etc/opt/senzing",
-                "LICENSESTRINGBASE64": "{license_string}",
-                "RESOURCEPATH": "/opt/senzing/g2/resources",
-                "SUPPORTPATH": "/opt/senzing/data"
-            },
-            "SQL": {
-                "BACKEND": "SQL",
-                "CONNECTION" : "mssql://${azurerm_mssql_server.server.administrator_login}:${urlencode(local.db_admin_password)}@${azurerm_mssql_server.server.fully_qualified_domain_name}:1433:${azurerm_mssql_database.db.name}"
-            }
-        }
-        EOT
+        name  = "AZURE_ANIMAL"
+        value = random_pet.rg_name.id
       }
       env {
         name  = "LC_CTYPE"
         value = "en_US.utf8"
       }
       env {
-        name  = "SENZING_SUBCOMMAND"
-        value = "mandatory"
+        name = "SENZING_AZURE_QUEUE_CONNECTION_STRING"
+        value = azurerm_servicebus_namespace.sz_service_bus.default_primary_connection_string
+      }
+      env {
+        name = "SENZING_AZURE_QUEUE_NAME"
+        value = azurerm_servicebus_queue.sz_queue.name
       }
       env {
         name  = "SENZING_DEBUG"
         value = "False"
       }
       env {
-        name  = "SENZING_DB_PWD"
-        value = local.db_admin_password
+        name = "SENZING_DELAY_IN_SECONDS"
+        value = "900"
       }
       env {
-        name  = "AZURE_ANIMAL"
-        value = random_pet.rg_name.id
+        name = "SENZING_DELAY_RANDOMIZED"
+        value = "true"
+      }
+      env {
+        name  = "SENZING_ENGINE_CONFIGURATION_JSON"
+        value = local.senzing_engine_configuration_json
+      }
+      env {
+        name = "SENZING_GOVERNOR_CHECK_TIME_INTERVAL_IN_SECONDS"
+        value = "600"
+      }
+      env {
+        name = "SENZING_LOG_LEVEL"
+        value = "info"
+      }
+      env {
+        name = "SENZING_MONITORING_PERIOD_IN_SECONDS"
+        value = "600"
+      }
+      env {
+        name = "SENZING_PRIME_ENGINE"
+        value = "true"
+      }
+      env {
+        name = "SENZING_SKIP_DATABASE_PERFORMANCE_TEST"
+        value = "true"
+      }
+      env {
+        name = "SENZING_SUBCOMMAND"
+        value = "azure-queue"
+      }
+      env {
+        name = "SENZING_THREADS_PER_PROCESS"
+        value = "20"
       }
     }
-
-
   }
 }
