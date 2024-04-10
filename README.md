@@ -86,7 +86,8 @@ az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL
 ### Attach to running container in a container app:
 
 ```
-export AZURE_ANIMAL=sz-crack-gnat
+export AZURE_ANIMAL=sz-composed-eel
+az containerapp exec --name $AZURE_ANIMAL-init-database-ca --resource-group $AZURE_ANIMAL-rg --container $AZURE_ANIMAL-senzingapi-tools
 az containerapp exec --name $AZURE_ANIMAL-ca --resource-group $AZURE_ANIMAL-rg --container $AZURE_ANIMAL-senzingapi-tools
 
 ```

@@ -15,15 +15,6 @@ output "db_admin_password" {
   value     = local.db_admin_password
 }
 
-output "ip_address" {
-  value = azurerm_container_app.sz_perf_app.outbound_ip_addresses
-}
-
-#the dns fqdn of the container group if dns_name_label is set
-output "fqdn" {
-  value = azurerm_container_app.sz_perf_app.latest_revision_fqdn
-}
-
 output "queue_name" {
   value = azurerm_servicebus_queue.sz_queue.name
 }
