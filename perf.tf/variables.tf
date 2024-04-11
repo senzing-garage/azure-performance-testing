@@ -7,7 +7,7 @@ variable "number_of_records" {
 variable "senzingapi-tools-image" {
   type        = string
   description = "Repo for the Senzing API Tools image"
-  default     = "docker.io/senzing/senzingapi-tools:3.9.0"
+  default     = "public.ecr.aws/senzing/senzingapi-tools:staging"
 }
 
 variable "senzing-producer-image" {
@@ -19,8 +19,8 @@ variable "senzing-producer-image" {
 variable "senzing-loader-image" {
   type        = string
   description = "Repo for the Senzing loader image"
-  # default     = "docker.io/senzing/senzingapi-runtime:latest"
-  default     = "public.ecr.aws/senzing/stream-loader:staging"
+  default     = "public.ecr.aws/senzing/senzingapi-runtime:staging"
+  # default     = "public.ecr.aws/senzing/stream-loader:staging"
   # default     = "public.ecr.aws/senzing/sz_sqs_consumer:staging"
 }
 
@@ -102,12 +102,43 @@ variable "init_loader_command" {
       wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg
       wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list
       apt-get update
-      ACCEPT_EULA=Y apt-get -y install msodbcsql17 mssql-tools
-      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+      ACCEPT_EULA=Y apt-get -y install \
+        libaio1 libodbc1 libxml2 \
+        msodbcsql17 mssql-tools \
+        python3 python3-dev python3-pip python3-venv unixodbc
+      python3 -m venv /app/venv
+      export PATH="/app/venv/bin:$PATH"
+      wget -qO - https://raw.githubusercontent.com/senzing-garage/stream-loader/main/requirements.txt > /app/requirements.txt
+      cd /app
+      pip3 install --upgrade pip
+      pip3 install -r requirements.txt
+      wget -qO - https://raw.githubusercontent.com/Senzing/governor-postgresql-transaction-id/main/senzing_governor.py > /opt/senzing/g2/sdk/python/senzing_governor.py
+      wget -qO - https://raw.githubusercontent.com/senzing-garage/stream-loader/main/rootfs/app/container-test.sh > /app/container-test.sh
+      wget -qO - https://raw.githubusercontent.com/senzing-garage/stream-loader/main/rootfs/app/healthcheck.sh > /app/healthcheck.sh
+      wget -qO - https://raw.githubusercontent.com/senzing-garage/stream-loader/main/stream-loader.py > /app/stream-loader.py
+      echo 'export VIRTUAL_ENV=/app/venv' >> ~/.bashrc
+      echo 'export PATH="/app/venv/bin:$PATH:/opt/mssql-tools/bin:/opt/senzing/g2/python:/opt/IBM/db2/clidriver/adm:/opt/IBM/db2/clidriver/bin"' >> ~/.bashrc
+      echo 'export PYTHONPATH="$PYTHONPATH:/opt/senzing/g2/sdk/python:/app"' >> ~/.bashrc
+      echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/senzing/g2/lib:/opt/senzing/g2/lib/debian:/opt/IBM/db2/clidriver/lib"' >> ~/.bashrc
+      echo 'export SENZING_DOCKER_LAUNCHED=true' >> ~/.bashrc
+      echo 'export PYTHONUNBUFFERED=1' >> ~/.bashrc
       source ~/.bashrc
       while true; do echo grumble $(date); sleep 600;done
   EOT
 }
+
+
+
+# HEALTHCHECK CMD ["/app/healthcheck.sh"]
+
+# RUN apt update \
+#   && apt -y install \
+#   librdkafka-dev \
+#   postgresql-client \
+
+# WORKDIR /app
+# ENTRYPOINT ["/app/stream-loader.py"]
+
 
 variable "init_sz_consumer_command" {
   type        = string
