@@ -86,9 +86,9 @@ az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL
 ### Attach to running container in a container app:
 
 ```
-export AZURE_ANIMAL=sz-engaging-egret
+export AZURE_ANIMAL=sz-proud-arachnid
 az containerapp exec --name $AZURE_ANIMAL-ca --resource-group $AZURE_ANIMAL-rg --command bash --container $AZURE_ANIMAL-senzing-loader
-az containerapp exec --name $AZURE_ANIMAL-init-database-ca --resource-group $AZURE_ANIMAL-rg --command bash --container $AZURE_ANIMAL-senzingapi-tools
+az containerapp exec --name $AZURE_ANIMAL-init-db-ca --resource-group $AZURE_ANIMAL-rg --command bash --container $AZURE_ANIMAL-senzingapi-tools
 ```
 
 #### inside Senzing container:
@@ -181,6 +181,93 @@ az sql db list-editions -l westus -o table
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT name FROM sys.tables;"
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -i /tmp/q.sql -o /tmp/q.out
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT * FROM sys_vars;"
+
+```
+docker run -it --rm public.ecr.aws/senzing/senzingapi-tools:staging
+apt-get update
+apt-get -y install senzingapi-setup
+apt-get -y install senzingapi-setup=3.9.1-24074
+
+
+docker run -it --rm public.ecr.aws/senzing/senzingapi-tools:staging
+
+root@aed44e5b3fcb:/# apt policy senzingapi-tools
+senzingapi-tools:
+  Installed: 3.9.1-24074
+  Candidate: 3.9.1-24074
+  Version table:
+ *** 3.9.1-24074 100
+        100 /var/lib/dpkg/status
+
+root@aed44e5b3fcb:/# apt install senzingapi-setup
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+E: Unable to locate package senzingapi-setup
+root@aed44e5b3fcb:/# apt update
+Get:1 http://deb.debian.org/debian bullseye InRelease [116 kB]
+Get:2 http://deb.debian.org/debian-security bullseye-security InRelease [48.4 kB]
+Get:3 http://deb.debian.org/debian bullseye-updates InRelease [44.1 kB]
+Get:4 http://deb.debian.org/debian bullseye/main amd64 Packages [8068 kB]
+Get:5 https://senzing-staging-apt.s3.amazonaws.com stable InRelease [2899 B]
+Get:6 https://senzing-staging-apt.s3.amazonaws.com stable/main amd64 Packages [8200 B]
+Get:7 http://deb.debian.org/debian-security bullseye-security/main amd64 Packages [271 kB]
+Get:8 http://deb.debian.org/debian bullseye-updates/main amd64 Packages [18.8 kB]
+Fetched 8576 kB in 6s (1544 kB/s)
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+9 packages can be upgraded. Run 'apt list --upgradable' to see them.
+root@aed44e5b3fcb:/# apt policy senzingapi-tools
+senzingapi-tools:
+  Installed: 3.9.1-24074
+  Candidate: 4.0.0-24017
+  Version table:
+     4.0.0-24017 500
+        500 https://senzing-staging-apt.s3.amazonaws.com stable/main amd64 Packages
+     3.9.1-24093 500
+        500 https://senzing-staging-apt.s3.amazonaws.com stable/main amd64 Packages
+     3.9.1-24092 500
+        500 https://senzing-staging-apt.s3.amazonaws.com stable/main amd64 Packages
+     3.9.1-24089 500
+        500 https://senzing-staging-apt.s3.amazonaws.com stable/main amd64 Packages
+     3.9.1-24088 500
+        500 https://senzing-staging-apt.s3.amazonaws.com stable/main amd64 Packages
+ *** 3.9.1-24074 500
+        500 https://senzing-staging-apt.s3.amazonaws.com stable/main amd64 Packages
+        100 /var/lib/dpkg/status
+     3.9.0-24071 500
+        500 https://senzing-staging-apt.s3.amazonaws.com stable/main amd64 Packages
+     3.9.0-24068 500
+        500 https://senzing-staging-apt.s3.amazonaws.com stable/main amd64 Packages
+     3.9.0-24064 500
+        500 https://senzing-staging-apt.s3.amazonaws.com stable/main amd64 Packages
+     3.9.0-24058 500
+        500 https://senzing-staging-apt.s3.amazonaws.com stable/main amd64 Packages
+     3.9.0-24053 500
+        500 https://senzing-staging-apt.s3.amazonaws.com stable/main amd64 Packages
+     3.8.3-24043 500
+        500 https://senzing-staging-apt.s3.amazonaws.com stable/main amd64 Packages
+     3.8.3-24037 500
+        500 https://senzing-staging-apt.s3.amazonaws.com stable/main amd64 Packages
+
+## Azure logs
+
+Container app > Monitoring > Logs (instead of log stream)
+
+```
+ContainerAppConsoleLogs_CL
+| where ContainerAppName_s == 'sz-proud-arachnid-ca'
+| project Time=TimeGenerated, AppName=ContainerAppName_s, Revision=RevisionName_s, Container=ContainerName_s, Message=Log_s
+| take 100
+```
+
+```
+ContainerAppSystemLogs_CL
+| where ContainerAppName_s == 'sz-proud-arachnid-ca'
+| project Time=TimeGenerated, EnvName=EnvironmentName_s, AppName=ContainerAppName_s, Revision=RevisionName_s, Message=Log_s
+| take 100
 ```
 
 ## Terraform

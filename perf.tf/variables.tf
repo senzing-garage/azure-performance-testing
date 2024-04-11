@@ -1,7 +1,7 @@
 variable "number_of_records" {
   type        = string
   description = "Number of records to put into the queue for processing"
-  default     = "100"
+  default     = "1000"
 }
 
 variable "senzingapi-tools-image" {
@@ -85,7 +85,8 @@ variable "db_init_command" {
       ACCEPT_EULA=Y apt-get -y install msodbcsql17 mssql-tools
       echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
       source ~/.bashrc
-      apt-get -y install senzingapi-setup
+      export TOOLS_VERSION=$(apt policy senzingapi-tools|grep Installed |cut -d ":" -f 2| awk '{$1=$1};1')
+      apt-get -y install senzingapi-setup=$TOOLS_VERSION
       sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -i /opt/senzing/g2/resources/schema/g2core-schema-mssql-create.sql -o /tmp/schema.out
       echo "addDataSource CUSTOMERS" > /tmp/add.sz
       echo "addDataSource REFERENCE" >> /tmp/add.sz
@@ -116,6 +117,9 @@ variable "init_loader_command" {
       wget -qO - https://raw.githubusercontent.com/senzing-garage/stream-loader/main/rootfs/app/container-test.sh > /app/container-test.sh
       wget -qO - https://raw.githubusercontent.com/senzing-garage/stream-loader/main/rootfs/app/healthcheck.sh > /app/healthcheck.sh
       wget -qO - https://raw.githubusercontent.com/senzing-garage/stream-loader/main/stream-loader.py > /app/stream-loader.py
+      chmod +x /app/container-test.sh
+      chmod +x /app/healthcheck.sh
+      chmod +x /app/stream-loader.py
       echo 'export VIRTUAL_ENV=/app/venv' >> ~/.bashrc
       echo 'export PATH="/app/venv/bin:$PATH:/opt/mssql-tools/bin:/opt/senzing/g2/python:/opt/IBM/db2/clidriver/adm:/opt/IBM/db2/clidriver/bin"' >> ~/.bashrc
       echo 'export PYTHONPATH="$PYTHONPATH:/opt/senzing/g2/sdk/python:/app"' >> ~/.bashrc
