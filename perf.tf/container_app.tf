@@ -9,6 +9,7 @@ locals {
             },
             "SQL": {
                 "BACKEND": "SQL",
+                "DEBUGLEVEL": "2",
                 "CONNECTION" : "mssql://${azurerm_mssql_server.server.administrator_login}:${urlencode(local.db_admin_password)}@${azurerm_mssql_server.server.fully_qualified_domain_name}:1433:${azurerm_mssql_database.db.name}"
             }
         }
@@ -35,10 +36,10 @@ resource "azurerm_container_app" "sz_init_database_app" {
 
     # Senzing Init Container, used to initialize the database
     init_container {
-      name   = "${random_pet.rg_name.id}-init-database"
-      image  = var.senzingapi-tools-image
-      cpu    = 0.5
-      memory = "1.0Gi"
+      name    = "${random_pet.rg_name.id}-init-database"
+      image   = var.senzingapi-tools-image
+      cpu     = 0.5
+      memory  = "1.0Gi"
       command = ["/bin/bash", "-c", var.db_init_command]
 
       env {
@@ -84,65 +85,65 @@ resource "azurerm_container_app" "sz_init_database_app" {
         value = "en_US.utf8"
       }
       env {
-        name = "SENZING_AZURE_QUEUE_CONNECTION_STRING"
+        name  = "SENZING_AZURE_QUEUE_CONNECTION_STRING"
         value = azurerm_servicebus_namespace.sz_service_bus.default_primary_connection_string
       }
       env {
-        name = "SENZING_AZURE_QUEUE_NAME"
+        name  = "SENZING_AZURE_QUEUE_NAME"
         value = azurerm_servicebus_queue.sz_queue.name
       }
       env {
-        name = "SENZING_DEFAULT_DATA_SOURCE"
+        name  = "SENZING_DEFAULT_DATA_SOURCE"
         value = "TEST"
       }
       env {
-        name = "SENZING_DEFAULT_ENTITY_TYPE"
+        name  = "SENZING_DEFAULT_ENTITY_TYPE"
         value = "GENERIC"
       }
       env {
-        name = "SENZING_INPUT_URL"
+        name  = "SENZING_INPUT_URL"
         value = var.test_data_url
       }
       env {
-        name = "SENZING_MONITORING_PERIOD_IN_SECONDS"
+        name  = "SENZING_MONITORING_PERIOD_IN_SECONDS"
         value = "60"
       }
       env {
-        name = "SENZING_READ_QUEUE_MAXSIZE"
+        name  = "SENZING_READ_QUEUE_MAXSIZE"
         value = "200"
       }
       env {
-        name = "SENZING_RECORD_MAX"
+        name  = "SENZING_RECORD_MAX"
         value = var.number_of_records
       }
       env {
-        name = "SENZING_RECORD_MIN"
+        name  = "SENZING_RECORD_MIN"
         value = "0"
       }
       env {
-        name = "SENZING_RECORD_MONITOR"
+        name  = "SENZING_RECORD_MONITOR"
         value = "100000"
       }
       env {
-        name = "SENZING_RECORDS_PER_MESSAGE"
+        name  = "SENZING_RECORDS_PER_MESSAGE"
         value = "1"
       }
       env {
-        name = "SENZING_SUBCOMMAND"
+        name  = "SENZING_SUBCOMMAND"
         value = "gzipped-json-to-azure-queue"
       }
       env {
-        name = "SENZING_THREADS_PER_PRINT"
+        name  = "SENZING_THREADS_PER_PRINT"
         value = "30"
       }
     }
 
     # Senzing API Tools, used to inspect the database and run tool commands
     container {
-      name   = "${random_pet.rg_name.id}-senzingapi-tools"
-      image  = var.senzingapi-tools-image
-      cpu    = 0.5
-      memory = "1.0Gi"
+      name    = "${random_pet.rg_name.id}-senzingapi-tools"
+      image   = var.senzingapi-tools-image
+      cpu     = 0.5
+      memory  = "1.0Gi"
       command = ["/bin/bash", "-c", var.use_mstools_init_command]
 
       env {
@@ -181,15 +182,15 @@ resource "azurerm_container_app" "sz_perf_app" {
   container_app_environment_id = azurerm_container_app_environment.sz_perf_app_env.id
   resource_group_name          = azurerm_resource_group.rg.name
   revision_mode                = "Single"
-  depends_on = [ azurerm_container_app.sz_init_database_app ]
+  depends_on                   = [azurerm_container_app.sz_init_database_app]
   template {
 
     # Senzing API Tools, used to inspect the database and run tool commands
     container {
-      name   = "${random_pet.rg_name.id}-senzing-loader"
-      image  = var.senzing-loader-image
-      cpu    = 0.5
-      memory = "1.0Gi"
+      name    = "${random_pet.rg_name.id}-senzing-loader"
+      image   = var.senzing-loader-image
+      cpu     = 0.5
+      memory  = "1.0Gi"
       command = ["/bin/bash", "-c", var.init_loader_command]
 
       env {
@@ -201,11 +202,11 @@ resource "azurerm_container_app" "sz_perf_app" {
         value = "en_US.utf8"
       }
       env {
-        name = "SENZING_AZURE_QUEUE_CONNECTION_STRING"
+        name  = "SENZING_AZURE_QUEUE_CONNECTION_STRING"
         value = azurerm_servicebus_namespace.sz_service_bus.default_primary_connection_string
       }
       env {
-        name = "SENZING_AZURE_QUEUE_NAME"
+        name  = "SENZING_AZURE_QUEUE_NAME"
         value = azurerm_servicebus_queue.sz_queue.name
       }
       env {
@@ -213,11 +214,11 @@ resource "azurerm_container_app" "sz_perf_app" {
         value = "False"
       }
       env {
-        name = "SENZING_DELAY_IN_SECONDS"
+        name  = "SENZING_DELAY_IN_SECONDS"
         value = "900"
       }
       env {
-        name = "SENZING_DELAY_RANDOMIZED"
+        name  = "SENZING_DELAY_RANDOMIZED"
         value = "true"
       }
       env {
@@ -225,31 +226,31 @@ resource "azurerm_container_app" "sz_perf_app" {
         value = local.senzing_engine_configuration_json
       }
       env {
-        name = "SENZING_GOVERNOR_CHECK_TIME_INTERVAL_IN_SECONDS"
+        name  = "SENZING_GOVERNOR_CHECK_TIME_INTERVAL_IN_SECONDS"
         value = "600"
       }
       env {
-        name = "SENZING_LOG_LEVEL"
+        name  = "SENZING_LOG_LEVEL"
         value = "info"
       }
       env {
-        name = "SENZING_MONITORING_PERIOD_IN_SECONDS"
+        name  = "SENZING_MONITORING_PERIOD_IN_SECONDS"
         value = "600"
       }
       env {
-        name = "SENZING_PRIME_ENGINE"
+        name  = "SENZING_PRIME_ENGINE"
         value = "true"
       }
       env {
-        name = "SENZING_SKIP_DATABASE_PERFORMANCE_TEST"
+        name  = "SENZING_SKIP_DATABASE_PERFORMANCE_TEST"
         value = "true"
       }
       env {
-        name = "SENZING_SUBCOMMAND"
+        name  = "SENZING_SUBCOMMAND"
         value = "azure-queue"
       }
       env {
-        name = "SENZING_THREADS_PER_PROCESS"
+        name  = "SENZING_THREADS_PER_PROCESS"
         value = "20"
       }
     }
