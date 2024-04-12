@@ -9,12 +9,15 @@ locals {
             },
             "SQL": {
                 "BACKEND": "SQL",
-                "DEBUGLEVEL": "2",
+                "DEBUGLEVEL": "0",
                 "CONNECTION" : "mssql://${azurerm_mssql_server.server.administrator_login}:${urlencode(local.db_admin_password)}@${azurerm_mssql_server.server.fully_qualified_domain_name}:1433:${azurerm_mssql_database.db.name}"
             }
         }
         EOT
 }
+
+# DEBUGLEVEL: is a bitmask.  1 means PERF, 2 means SQL, and 3 means both.
+#   it only works when vebose-logging is also on.  How do we turn on verbose logging?
 
 resource "azurerm_container_app_environment" "sz_perf_app_env" {
   name                       = "${random_pet.rg_name.id}-cae"
