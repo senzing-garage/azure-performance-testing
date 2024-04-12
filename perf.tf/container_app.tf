@@ -189,8 +189,8 @@ resource "azurerm_container_app" "sz_perf_app" {
     container {
       name    = "${random_pet.rg_name.id}-senzing-loader"
       image   = var.senzing-loader-image
-      cpu     = 0.5
-      memory  = "1.0Gi"
+      cpu     = 2
+      memory  = "4.0Gi"
       command = ["/bin/bash", "-c", var.init_loader_command]
 
       env {

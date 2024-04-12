@@ -86,9 +86,35 @@ az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL
 ### Attach to running container in a container app:
 
 ```
-export AZURE_ANIMAL=sz-proud-arachnid
+export AZURE_ANIMAL=sz-legal-antelope
 az containerapp exec --name $AZURE_ANIMAL-ca --resource-group $AZURE_ANIMAL-rg --command bash --container $AZURE_ANIMAL-senzing-loader
 az containerapp exec --name $AZURE_ANIMAL-init-db-ca --resource-group $AZURE_ANIMAL-rg --command bash --container $AZURE_ANIMAL-senzingapi-tools
+
+
+wget -qO - https://raw.githubusercontent.com/roncewind/sz_sb_consumer/main/test.py > /app/test.py
+
+
+export SENZING_ENGINE_CONFIGURATION_JSON='{"PIPELINE": {"CONFIGPATH": "/etc/opt/senzing","LICENSESTRINGBASE64": "{license_string}","RESOURCEPATH": "/opt/senzing/g2/resources","SUPPORTPATH": "/opt/senzing/data"},"SQL": {"BACKEND": "SQL","DEBUGLEVEL": "","CONNECTION" : "mssql://senzing:LLlAx23mb6utUQ8UBZ5h@sz-legal-antelope-mssql-server.database.windows.net:1433:G2"}}'
+
+------------
+--> {"SSN_NUMBER": "388-69-4882", "NAME_FIRST": "JOHNNIE", "PASSPORT_NUMBER": "CN5QGN8HY8", "GENDER": "M", "CC_ACCOUNT_NUMBER": "541119397002419249", "RECORD_ID": "526429955", "DSRC_ACTION": "A", "DRIVERS_LICENSE_NUMBER": "943105509", "DRIVERS_LICENSE_STATE": "IV", "PHONE_NUMBER": "355-9553", "NAME_LAST": "H", "ADDR_LINE1": "69 Cayuga CT", "DATA_SOURCE": "TEST"}
+------------
+DATA_SOURCE: TEST
+RECORD_ID: 526429955
+>>>>> calling addRecord
+2024-04-12 18:39:00.195 [:124207928690496] NOTE: TRACE: G2_addRecord([TEST],[526429955],[{"SSN_NUMBER": "388-69-4882", "NAME_FIRST": "JOHNNIE", "PASSPORT_NUMBER": "CN5QGN8HY8", "GENDER": "M", "CC_ACCOUNT_NUMBER": "541119397002419249", "RECORD_ID": "526429955", "DSRC_ACTION": "A", "DRIVERS_LICENSE_NUMBER": "943105509", "DRIVERS_LICENSE_STATE": "IV", "PHONE_NUMBER": "355-9553", "NAME_LAST": "H", "ADDR_LINE1": "69 Cayuga CT", "DATA_SOURCE": "TEST"}],[])
+2024-04-12 18:39:00.195 [:124207928690496] DBUG: Creating engine processor database connection.
+2024-04-12 18:39:00.196 [:124207928690496] DBUG: Opening connection to database type mssql:
+2024-04-12 18:39:00.215 [:124207928690496] DBUG: Connected to database.
+2024-04-12 18:39:00.215 [:124207928690496] DBUG: Shards are not used for the data store.
+2024-04-12 18:39:00.216 [:124207928690496] DBUG: Done creating engine processor database connection.
+2024-04-12 18:39:00.217 [:124207928690496] DBUG: Testing (and possible reconnect) to database connection:
+2024-04-12 18:39:00.236 [:124207928690496] DBUG: Database connection tested.
+2024-04-12 18:39:00.283 [:124207928690496] DBUG: Found JSON input, mapping to UMF...
+2024-04-12 18:39:00.284 [:124207928690496] DBUG: Populating cache for sequence [OBS_ID]
+2024-04-12 18:39:00.311 [:124207928690496] DBUG: ENTERING KEYLESS PROCESSING
+2024-04-12 18:39:00.315 [:124207928690496] DBUG: Parsing and Standardizing Features for OBS_ENT
+Killed
 ```
 
 #### inside Senzing container:
@@ -178,10 +204,15 @@ az sql db list-editions -l westus -o table
 #### inside senzing container:
 
 ```
+isql $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 senzing $SENZING_DB_PWD
+
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT name FROM sys.tables;"
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -i /tmp/q.sql -o /tmp/q.out
-sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT * FROM sys_vars;"
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT * FROM sys_vars"
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT GETDATE(), COUNT(*) FROM DSRC_RECORD;"
+
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -Q 'select min(FIRST_SEEN_DT) load_start, count(*) / (DATEDIFF(s,min(FIRST_SEEN_DT),max(FIRST_SEEN_DT))/60) erpm, count(*) total, DATEDIFF(mi,min(FIRST_SEEN_DT),max(FIRST_SEEN_DT))/(60.0*24.0) duration from DSRC_RECORD WITH (NOLOCK);'
 
 ```
 docker run -it --rm public.ecr.aws/senzing/senzingapi-tools:staging

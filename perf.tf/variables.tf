@@ -127,11 +127,11 @@ variable "init_loader_command" {
       echo 'export SENZING_DOCKER_LAUNCHED=true' >> ~/.bashrc
       echo 'export PYTHONUNBUFFERED=1' >> ~/.bashrc
       source ~/.bashrc
-      while true; do echo grumble $(date); sleep 600;done
+      /app/stream-loader.py
   EOT
 }
 
-
+# while true; do echo grumble $(date); sleep 600;done
 
 # HEALTHCHECK CMD ["/app/healthcheck.sh"]
 
@@ -167,4 +167,4 @@ variable "init_sz_consumer_command" {
   EOT
 }
 
-      # while true; do echo grumble $(date); sleep 600;done
+# while true; do echo grumble $(date); sleep 600;done
