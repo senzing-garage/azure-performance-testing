@@ -86,9 +86,9 @@ az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL
 ### Attach to running container in a container app:
 
 ```
-export AZURE_ANIMAL=sz-legal-antelope
-az containerapp exec --name $AZURE_ANIMAL-ca --resource-group $AZURE_ANIMAL-rg --command bash --container $AZURE_ANIMAL-senzing-loader
+export AZURE_ANIMAL=sz-first-termite
 az containerapp exec --name $AZURE_ANIMAL-init-db-ca --resource-group $AZURE_ANIMAL-rg --command bash --container $AZURE_ANIMAL-senzingapi-tools
+az containerapp exec --name $AZURE_ANIMAL-ca --resource-group $AZURE_ANIMAL-rg --command bash --container $AZURE_ANIMAL-senzing-loader
 
 
 wget -qO - https://raw.githubusercontent.com/roncewind/sz_sb_consumer/main/test.py > /app/test.py

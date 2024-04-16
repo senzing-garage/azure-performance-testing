@@ -189,6 +189,8 @@ resource "azurerm_container_app" "sz_perf_app" {
   template {
 
     # Senzing API Tools, used to inspect the database and run tool commands
+    min_replicas = 1
+    max_replicas = 50 #maxed out at 49?  300
     container {
       name    = "${random_pet.rg_name.id}-senzing-loader"
       image   = var.senzing-loader-image
@@ -254,7 +256,23 @@ resource "azurerm_container_app" "sz_perf_app" {
       }
       env {
         name  = "SENZING_THREADS_PER_PROCESS"
-        value = "20"
+        value = "2"
+      }
+    }
+    custom_scale_rule {
+      name             = "loader-scale-rule"
+      custom_rule_type = "memory"
+      metadata = {
+        type : "Utilization"
+        value : "50"
+        # metric_name = "MemoryWorkingSetBytes"
+        # metric_resource_id = azurerm_container_app.sz_init_database_app.id
+        # operator = "GreaterThan"
+        # threshold = 1000000000
+        # statistic = "Average"
+        # time_aggregation = "Average"
+        # time_grain = "PT1M"
+        # time_window = "PT5M"
       }
     }
   }
