@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sz-script-configmap
+data:
+  sz-init-script.sh: |
+    #!/bin/bash
+    wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg
+    wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list
+    apt-get update
+    ACCEPT_EULA=Y apt-get -y install \
+      libaio1 libodbc1 libxml2 \
+      msodbcsql17 mssql-tools \
+      python3 python3-dev python3-pip python3-venv unixodbc
+    python3 -m venv /app/venv
+    export PATH="/app/venv/bin:$PATH"
+    wget -qO - https://raw.githubusercontent.com/senzing-garage/stream-loader/main/requirements.txt > /app/requirements.txt
+    cd /app
+    pip3 install --upgrade pip
+    pip3 install -r requirements.txt
+    wget -qO - https://raw.githubusercontent.com/Senzing/governor-postgresql-transaction-id/main/senzing_governor.py > /opt/senzing/g2/sdk/python/senzing_governor.py
+    wget -qO - https://raw.githubusercontent.com/senzing-garage/stream-loader/main/rootfs/app/container-test.sh > /app/container-test.sh
+    wget -qO - https://raw.githubusercontent.com/senzing-garage/stream-loader/main/rootfs/app/healthcheck.sh > /app/healthcheck.sh
+    wget -qO - https://raw.githubusercontent.com/senzing-garage/stream-loader/main/stream-loader.py > /app/stream-loader.py
+    chmod +x /app/container-test.sh
+    chmod +x /app/healthcheck.sh
+    chmod +x /app/stream-loader.py
+    echo 'export VIRTUAL_ENV=/app/venv' >> ~/.bashrc
+    echo 'export PATH="/app/venv/bin:$PATH:/opt/mssql-tools/bin:/opt/senzing/g2/python:/opt/IBM/db2/clidriver/adm:/opt/IBM/db2/clidriver/bin"' >> ~/.bashrc
+    echo 'export PYTHONPATH="$PYTHONPATH:/opt/senzing/g2/sdk/python:/app"' >> ~/.bashrc
+    echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/senzing/g2/lib:/opt/senzing/g2/lib/debian:/opt/IBM/db2/clidriver/lib"' >> ~/.bashrc
+    echo 'export SENZING_DOCKER_LAUNCHED=true' >> ~/.bashrc
+    echo 'export PYTHONUNBUFFERED=1' >> ~/.bashrc
+    source ~/.bashrc
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sz-loader
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: sz-loader
+  template:
+    metadata:
+      labels:
+        app: sz-loader
+    spec:
+      volumes:
+        - name: sz-script-volume
+          configMap:
+            defaultMode: 0700
+            name: sz-script-configmap
+      containers:
+        - name: sz-loader
+          image: 'public.ecr.aws/senzing/senzingapi-runtime:staging'
+          resources:
+            requests:
+              cpu: '4.0'
+              memory: '25Gi'
+          # limits:
+          #   cpu: 4.0
+          #   memory: 30Gi
+          env:
+            - name: 'AZURE_ANIMAL'
+              value: '${AZURE_ANIMAL}'
+            - name: 'LC_CTYPE'
+              value: 'en_US.utf8'
+            - name: 'SENZING_AZURE_QUEUE_CONNECTION_STRING'
+              value: '${SENZING_AZURE_QUEUE_CONNECTION_STRING}'
+            - name: 'SENZING_AZURE_QUEUE_NAME'
+              value: '${SENZING_AZURE_QUEUE_NAME}'
+            - name: 'SENZING_DEBUG'
+              value: 'False'
+            - name: 'SENZING_DELAY_IN_SECONDS'
+              value: '900'
+            - name: 'SENZING_DELAY_RANDOMIZED'
+              value: 'true'
+            - name: 'SENZING_ENGINE_CONFIGURATION_JSON'
+              value: '${SENZING_ENGINE_CONFIGURATION_JSON}'
+            - name: 'SENZING_GOVERNOR_CHECK_TIME_INTERVAL_IN_SECONDS'
+              value: '600'
+            - name: 'SENZING_LOG_LEVEL'
+              value: 'info'
+            - name: 'SENZING_MONITORING_PERIOD_IN_SECONDS'
+              value: '600'
+            - name: 'SENZING_PRIME_ENGINE'
+              value: 'true'
+            - name: 'SENZING_SKIP_DATABASE_PERFORMANCE_TEST'
+              value: 'true'
+            - name: 'SENZING_SUBCOMMAND'
+              value: 'azure-queue'
+            - name: 'SENZING_THREADS_PER_PROCESS'
+              value: '20'
+          command: ['/bin/bash', '-c']
+          args: ['/init/sz-init-script.sh', '/app/stream-loader.py']
+          # args: |
+          #   /init/sz-init-script.sh
+          #   /app/stream-loader.py
+          volumeMounts:
+            - name: sz-script-volume
+              mountPath: /init/
+              readOnly: true

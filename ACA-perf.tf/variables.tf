@@ -1,7 +1,7 @@
 variable "number_of_records" {
   type        = string
   description = "Number of records to put into the queue for processing"
-  default     = "10000"
+  default     = "1000000"
 }
 
 variable "senzingapi-tools-image" {
@@ -60,27 +60,6 @@ variable "db_admin_password" {
   sensitive   = true
   default     = null
 }
-
-locals {
-  senzing_engine_configuration_json = <<EOT
-        {
-            "PIPELINE": {
-                "CONFIGPATH": "/etc/opt/senzing",
-                "LICENSESTRINGBASE64": "{license_string}",
-                "RESOURCEPATH": "/opt/senzing/g2/resources",
-                "SUPPORTPATH": "/opt/senzing/data"
-            },
-            "SQL": {
-                "BACKEND": "SQL",
-                "DEBUGLEVEL": "0",
-                "CONNECTION" : "mssql://${azurerm_mssql_server.server.administrator_login}:${urlencode(local.db_admin_password)}@${azurerm_mssql_server.server.fully_qualified_domain_name}:1433:${azurerm_mssql_database.db.name}"
-            }
-        }
-        EOT
-}
-
-# DEBUGLEVEL: is a bitmask.  1 means PERF, 2 means SQL, and 3 means both.
-#   it only works when vebose-logging is also on.  How do we turn on verbose logging?
 
 variable "use_mstools_init_command" {
   type        = string
