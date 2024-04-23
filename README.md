@@ -89,10 +89,13 @@ kubectl get nodes
 
 ### bring up loaders:
 
-create the configmap script:
+
 
 ```
-kubectl apply -f loader-config.yaml
+terraform init -upgrade
+terraform validate
+terraform plan -out main.tfplan
+terraform apply main.tfplan
 ```
 
 export the env vars from the terraform:
@@ -101,6 +104,13 @@ export the env vars from the terraform:
 terraform output -json | jq -r '@sh "export AZURE_ANIMAL=\(.AZURE_ANIMAL.value)\nexport SENZING_AZURE_QUEUE_CONNECTION_STRING=\(.SENZING_AZURE_QUEUE_CONNECTION_STRING.value)\nexport SENZING_AZURE_QUEUE_NAME=\(.SENZING_AZURE_QUEUE_NAME.value)\nexport SENZING_ENGINE_CONFIGURATION_JSON=\(.SENZING_ENGINE_CONFIGURATION_JSON.value| gsub("[ \\n\\t]"; ""))"' > env.sh
 
 source env.sh
+```
+
+If you need to exec into one of the loader containers and test the database:
+
+- from local: `terraform output -json | jq -r ".db_admin_password.value"`
+- inside pod: `export SENZING_DB_PWD=<pwd>`
+
 ```
 
 deploy loaders:

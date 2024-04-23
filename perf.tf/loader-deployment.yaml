@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: sz-script-configmap
 data:
-  sz-init-script.sh: |
+  sz-run-loader.sh: |
     #!/bin/bash
     wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg
     wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list
@@ -32,14 +32,14 @@ data:
     echo 'export SENZING_DOCKER_LAUNCHED=true' >> ~/.bashrc
     echo 'export PYTHONUNBUFFERED=1' >> ~/.bashrc
     source ~/.bashrc
-
+    /app/stream-loader.py
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sz-loader
 spec:
-  replicas: 3
+  replicas: 16
   selector:
     matchLabels:
       app: sz-loader
@@ -59,10 +59,10 @@ spec:
           resources:
             requests:
               cpu: '4.0'
-              memory: '25Gi'
-          # limits:
-          #   cpu: 4.0
-          #   memory: 30Gi
+              memory: '30Gi'
+            # limits:
+            #   cpu: 4.0
+            #   memory: 30Gi
           env:
             - name: 'AZURE_ANIMAL'
               value: '${AZURE_ANIMAL}'
@@ -95,10 +95,8 @@ spec:
             - name: 'SENZING_THREADS_PER_PROCESS'
               value: '20'
           command: ['/bin/bash', '-c']
-          args: ['/init/sz-init-script.sh', '/app/stream-loader.py']
-          # args: |
-          #   /init/sz-init-script.sh
-          #   /app/stream-loader.py
+          args: ['/init/sz-run-loader.sh']
+          # args: ['while true; do echo grumble $(date); sleep 600;done']
           volumeMounts:
             - name: sz-script-volume
               mountPath: /init/
