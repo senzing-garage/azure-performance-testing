@@ -8,7 +8,10 @@ resource "azurerm_kubernetes_cluster" "sz_perf_cluster" {
     name       = "default"
     node_count = "4"
     # vm_size    = "standard_d5_v2"
-    vm_size = "Standard_E16_v3"
+    vm_size             = "Standard_E16_v3"
+    enable_auto_scaling = true
+    min_count           = 4
+    max_count           = 10
   }
 
   identity {
