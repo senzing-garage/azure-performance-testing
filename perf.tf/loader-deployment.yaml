@@ -50,7 +50,7 @@ data:
     pip3 install -r requirements.txt
     pip3 install orjson
     pip3 install azure-servicebus
-    wget -qO - https://raw.githubusercontent.com/brianmacy/sz_simple_redoer/main/sz_simple_redoer.py > /app/sz_simple_redoer.py
+    wget -qO - https://raw.githubusercontent.com/brianmacy/sz_simple_redoer/mssql/sz_simple_redoer.py > /app/sz_simple_redoer.py
     chmod +x /app/sz_simple_redoer.py
     echo 'export VIRTUAL_ENV=/app/venv' >> ~/.bashrc
     echo 'export PATH="/app/venv/bin:$PATH:/opt/mssql-tools/bin:/opt/senzing/g2/python:/opt/IBM/db2/clidriver/adm:/opt/IBM/db2/clidriver/bin"' >> ~/.bashrc
