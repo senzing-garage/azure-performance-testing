@@ -4,6 +4,13 @@ resource "azurerm_servicebus_namespace" "sz_service_bus" {
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   sku                 = "Standard"
+
+  # network_rule_set {
+  #   default_action                = "Deny"
+  #   public_network_access_enabled = true
+  #   ip_rules                      = ["71.62.190.73"]
+
+  # }
 }
 
 resource "azurerm_servicebus_queue" "sz_queue" {
@@ -14,3 +21,4 @@ resource "azurerm_servicebus_queue" "sz_queue" {
   enable_partitioning                  = true
   lock_duration                        = "PT5M"
 }
+

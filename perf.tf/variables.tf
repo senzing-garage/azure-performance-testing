@@ -1,7 +1,7 @@
 variable "number_of_records" {
   type        = string
   description = "Number of records to put into the queue for processing"
-  default     = "100000"
+  default     = "10000"
 }
 
 variable "senzingapi-tools-image" {
@@ -28,6 +28,14 @@ variable "test_data_url" {
   type        = string
   description = "URL for the test data set."
   default     = "https://public-read-access.s3.amazonaws.com/TestDataSets/test-dataset-100m.json.gz"
+}
+
+variable "database-sku" {
+  type        = string
+  description = "SKU for the database to use"
+  # default     = "S0"
+  # default = "S3"
+  default = "HS_Gen5_8"
 }
 
 variable "prefix" {
@@ -109,82 +117,15 @@ variable "db_init_command" {
       export TOOLS_VERSION=$(apt policy senzingapi-tools|grep Installed |cut -d ":" -f 2| awk '{$1=$1};1')
       apt-get -y install senzingapi-setup=$TOOLS_VERSION
       sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -i /opt/senzing/g2/resources/schema/g2core-schema-mssql-create.sql -o /tmp/schema.out
+      echo "ALTER DATABASE G2 SET DELAYED_DURABILITY = Forced;" > /tmp/alterdb.sql
+      echo "ALTER DATABASE G2 SET AUTO_UPDATE_STATISTICS_ASYNC ON;" >> /tmp/alterdb.sql
+      echo "ALTER DATABASE G2 SET AUTO_CREATE_STATISTICS ON;" >> /tmp/alterdb.sql
+      sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -i /tmp/alterdb.sql -o /tmp/alterdb.out
       echo "addDataSource CUSTOMERS" > /tmp/add.sz
       echo "addDataSource REFERENCE" >> /tmp/add.sz
       echo "addDataSource WATCHLIST" >> /tmp/add.sz
       echo "save" >> /tmp/add.sz
       G2ConfigTool.py -f /tmp/add.sz
-  EOT
-}
-
-variable "init_loader_command" {
-  type        = string
-  description = "Command to install drivers in order to use Senzing."
-  default     = <<EOT
-      wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg
-      wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list
-      apt-get update
-      ACCEPT_EULA=Y apt-get -y install \
-        libaio1 libodbc1 libxml2 \
-        msodbcsql17 mssql-tools \
-        python3 python3-dev python3-pip python3-venv unixodbc
-      python3 -m venv /app/venv
-      export PATH="/app/venv/bin:$PATH"
-      wget -qO - https://raw.githubusercontent.com/senzing-garage/stream-loader/main/requirements.txt > /app/requirements.txt
-      cd /app
-      pip3 install --upgrade pip
-      pip3 install -r requirements.txt
-      wget -qO - https://raw.githubusercontent.com/Senzing/governor-postgresql-transaction-id/main/senzing_governor.py > /opt/senzing/g2/sdk/python/senzing_governor.py
-      wget -qO - https://raw.githubusercontent.com/senzing-garage/stream-loader/main/rootfs/app/container-test.sh > /app/container-test.sh
-      wget -qO - https://raw.githubusercontent.com/senzing-garage/stream-loader/main/rootfs/app/healthcheck.sh > /app/healthcheck.sh
-      wget -qO - https://raw.githubusercontent.com/senzing-garage/stream-loader/main/stream-loader.py > /app/stream-loader.py
-      chmod +x /app/container-test.sh
-      chmod +x /app/healthcheck.sh
-      chmod +x /app/stream-loader.py
-      echo 'export VIRTUAL_ENV=/app/venv' >> ~/.bashrc
-      echo 'export PATH="/app/venv/bin:$PATH:/opt/mssql-tools/bin:/opt/senzing/g2/python:/opt/IBM/db2/clidriver/adm:/opt/IBM/db2/clidriver/bin"' >> ~/.bashrc
-      echo 'export PYTHONPATH="$PYTHONPATH:/opt/senzing/g2/sdk/python:/app"' >> ~/.bashrc
-      echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/senzing/g2/lib:/opt/senzing/g2/lib/debian:/opt/IBM/db2/clidriver/lib"' >> ~/.bashrc
-      echo 'export SENZING_DOCKER_LAUNCHED=true' >> ~/.bashrc
-      echo 'export PYTHONUNBUFFERED=1' >> ~/.bashrc
-      source ~/.bashrc
-      /app/stream-loader.py
-  EOT
-}
-
-# while true; do echo grumble $(date); sleep 600;done
-
-# HEALTHCHECK CMD ["/app/healthcheck.sh"]
-
-# RUN apt update \
-#   && apt -y install \
-#   librdkafka-dev \
-#   postgresql-client \
-
-# WORKDIR /app
-# ENTRYPOINT ["/app/stream-loader.py"]
-
-
-variable "init_sz_consumer_command" {
-  type        = string
-  description = "Command to install drivers in order to use Senzing."
-  default     = <<EOT
-      wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg
-      wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list
-      apt-get update
-      apt-get -y install python3 python3-pip python3-boto3 python3-psycopg2
-      python3 -mpip install orjson
-      apt-get -y remove build-essential python3-pip
-      apt-get -y autoremove
-      apt-get -y clean
-      mkdir /app
-      wget -qO - https://raw.githubusercontent.com/brianmacy/sz_sqs_consumer/main/sz_sqs_consumer.py > /app/sz_sqs_consumer.py
-      wget -qO - https://raw.githubusercontent.com/Senzing/governor-postgresql-transaction-id/main/senzing_governor.py > /app/senzing_governor.py
-      ACCEPT_EULA=Y apt-get -y install msodbcsql17 mssql-tools
-      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
-      echo 'export PYTHONPATH="$PYTHONPATH:/opt/senzing/g2/sdk/python:/app"' >> ~/.bashrc
-      source ~/.bashrc
-      while true; do echo grumble $(date); sleep 600;done
   EOT
 }
 

@@ -87,7 +87,7 @@ kubectl get nodes
 #if export isn't done: `kubectl get nodes --kubeconfig kubeconfig
 
 
-### bring up loaders:
+### bring up the stack:
 
 
 
@@ -97,6 +97,8 @@ terraform validate
 terraform plan -out main.tfplan
 terraform apply main.tfplan
 ```
+
+### bring up loaders:
 
 export the env vars from the terraform:
 
@@ -118,7 +120,9 @@ If you need to exec into one of the loader containers and test the database:
 
 - from local: `terraform output -json | jq -r ".db_admin_password.value"`
 - inside pod: `export SENZING_DB_PWD=<pwd>`
+- inside pod to get ps/top: `apt install procps`
 
+export SENZING_DB_PWD=6Sxap6a3cXFp5KNiLf2m
 ```
 
 
@@ -146,7 +150,8 @@ kubectl exec --stdin --tty sz-loader-5668c9f4c9-4nvd9 -- /bin/bash
 ```
 # assumes: export AZURE_ANIMAL=sz-sensible-dodo
 az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-ca --follow
-az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-ca --container $AZURE_ANIMAL-debian
+az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-ca --container $AZURE_ANIMAL-init-database
+az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-ca --container $AZURE_ANIMAL-senzing-producer
 ```
 
 ### Attach to running container in a container app:
@@ -154,7 +159,7 @@ az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL
 ```
 # assumes: export AZURE_ANIMAL=sz-first-termite
 az containerapp exec --name $AZURE_ANIMAL-init-db-ca --resource-group $AZURE_ANIMAL-rg --command bash --container $AZURE_ANIMAL-senzingapi-tools
-az containerapp exec --name $AZURE_ANIMAL-ca --resource-group $AZURE_ANIMAL-rg --command bash --container $AZURE_ANIMAL-senzing-loader
+az containerapp exec --name $AZURE_ANIMAL-init-db-ca --resource-group $AZURE_ANIMAL-rg --command bash --container $AZURE_ANIMAL-init-database
 ```
 
 
@@ -182,6 +187,20 @@ az sql db list-editions -l westus -o table
 #### inside senzing container:
 
 ```
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "ALTER DATABASE G2 SET DELAYED_DURABILITY = Forced;"
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "ALTER DATABASE G2 SET AUTO_UPDATE_STATISTICS_ASYNC ON;"
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "ALTER DATABASE G2 SET AUTO_CREATE_STATISTICS ON;"
+
+
+
+### make sure the above worked:
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select delayed_durability, delayed_durability_desc, is_auto_create_stats_on, is_auto_update_stats_on from sys.databases;"
+
+
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select * from sys.database_scoped_configurations;;"
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select * from sys.databases;"
+
+
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT name FROM sys.tables;"
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -i /tmp/q.sql -o /tmp/q.out
