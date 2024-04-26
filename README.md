@@ -100,7 +100,7 @@ terraform apply main.tfplan
 
 ### bring up loaders:
 
-export the env vars from the terraform:
+#### export the env vars from the terraform:
 
 ```
 terraform output -json | jq -r '@sh "export AZURE_ANIMAL=\(.AZURE_ANIMAL.value)\nexport SENZING_AZURE_QUEUE_CONNECTION_STRING=\(.SENZING_AZURE_QUEUE_CONNECTION_STRING.value)\nexport SENZING_AZURE_QUEUE_NAME=\(.SENZING_AZURE_QUEUE_NAME.value)\nexport SENZING_ENGINE_CONFIGURATION_JSON=\(.SENZING_ENGINE_CONFIGURATION_JSON.value| gsub("[ \\n\\t]"; ""))"' > env.sh
@@ -108,7 +108,7 @@ terraform output -json | jq -r '@sh "export AZURE_ANIMAL=\(.AZURE_ANIMAL.value)\
 source env.sh
 ```
 
-deploy loaders:
+#### deploy loaders:
 
 ```
 envsubst < loader-deployment.yaml | kubectl apply -f -
@@ -116,17 +116,14 @@ envsubst < loader-deployment.yaml | kubectl apply -f -
 # kubectl apply -f loader-deployment.yaml
 ```
 
-If you need to exec into one of the loader containers and test the database:
+#### If you need to exec into one of the loader containers and test the database:
 
 - from local: `terraform output -json | jq -r ".db_admin_password.value"`
 - inside pod: `export SENZING_DB_PWD=<pwd>`
 - inside pod to get ps/top: `apt install procps`
 
-export SENZING_DB_PWD=6Sxap6a3cXFp5KNiLf2m
-```
 
-
-other commands:
+#### other commands:
 
 ```
 kubectl get pods --watch
@@ -136,12 +133,12 @@ kubectl exec --stdin --tty <pod name> -- /bin/bash
 kubectl get deployment
 kubectl delete deployment <deployment name>
 ```
-ref:
+
+#### ref:
 - https://spacelift.io/blog/kubectl-delete-deployment
 - https://spacelift.io/blog/kubectl-delete-pod
 - https://spacelift.io/blog/kubectl-logs
 
-kubectl exec --stdin --tty sz-loader-5668c9f4c9-4nvd9 -- /bin/bash
 
 ### See logs of a container app:
 
@@ -192,7 +189,6 @@ sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "ALTER DATABASE G2 SET AUTO_CREATE_STATISTICS ON;"
 
 
-
 ### make sure the above worked:
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select delayed_durability, delayed_durability_desc, is_auto_create_stats_on, is_auto_update_stats_on from sys.databases;"
 
@@ -212,13 +208,36 @@ sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT GETDATE(), COUNT(*) FROM RES_ENT_OKEY;"
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT GETDATE(), COUNT(*) FROM SYS_EVAL_QUEUE;"
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT GETDATE(), COUNT(*) FROM RES_RELATE;"
-sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select min(first_seen_dt) load_start, count(*) / (extract(EPOCH FROM (max(first_seen_dt)-min(first_seen_dt)))/60) erpm, count(*) total, max(first_seen_dt)-min(first_seen_dt) duration, (count(*) / (extract(EPOCH FROM (max(first_seen_dt)-min(first_seen_dt)))/60))/60 as avg_erps from dsrc_record;"
+
+
+# query that is close to what the AWS query gives us
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select min(first_seen_dt) load_start, count(*)/(DATEDIFF_BIG(SECOND, min(first_seen_dt), max(first_seen_dt))/60) erpm, count(*) total, max(first_seen_dt)-min(first_seen_dt) duration, count(*)/DATEDIFF_BIG(SECOND, min(first_seen_dt), max(first_seen_dt)) avg_erps from dsrc_record;"
+
+# from the perf page limited to last hour
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select min(FIRST_SEEN_DT) load_start, count(*) / (DATEDIFF(s,min(FIRST_SEEN_DT),max(FIRST_SEEN_DT))/60) erpm, count(*) total, DATEDIFF(mi,min(FIRST_SEEN_DT),max(FIRST_SEEN_DT))/(60.0*24.0) duration from DSRC_RECORD WITH (NOLOCK) where FIRST_SEEN_DT > DATEADD(hh, -1, GETDATE());"
+
+# same query, but not limited:
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -Q 'select min(FIRST_SEEN_DT) load_start, count(*) / (DATEDIFF(s,min(FIRST_SEEN_DT),max(FIRST_SEEN_DT))/60) erpm, count(*) total, DATEDIFF(mi,min(FIRST_SEEN_DT),max(FIRST_SEEN_DT))/(60.0*24.0) duration from DSRC_RECORD WITH (NOLOCK);'
+
+# extra queries that brian wants run
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select dr.RECORD_ID,oe.OBS_ENT_ID,reo.RES_ENT_ID from DSRC_RECORD dr left outer join OBS_ENT oe ON dr.dsrc_id = oe.dsrc_id and dr.ent_src_key = oe.ent_src_key left outer join RES_ENT_OKEY reo ON oe.OBS_ENT_ID = reo.OBS_ENT_ID where reo.RES_ENT_ID is null;"
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select dr.RECORD_ID,reo.OBS_ENT_ID,reo.RES_ENT_ID from RES_ENT_OKEY reo left outer join OBS_ENT oe ON oe.OBS_ENT_ID = reo.OBS_ENT_ID  left outer join DSRC_RECORD dr  ON dr.dsrc_id = oe.dsrc_id and dr.ent_src_key = oe.ent_src_key where dr.RECORD_ID is null;"
+```
 
 
 
-sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -Q 'select min(FIRST_SEEN_DT) load_start, count(*) / (DATEDIFF(s,min(FIRST_SEEN_DT),max(FIRST_SEEN_DT))/60) erpm, count(*) total, DATEDIFF(mi,min(FIRST_SEEN_DT),max(FIRST_SEEN_DT))/(60.0*24.0) duration from DSRC_RECORD WITH (NOLOCK);'
+```
+# queries from the perf page:
+--- Currently waiting
+select sqltext, CAST (STRING_AGG(wait_type, "|") as varchar(50)), sum(cnt) as cnt, sum(elapsed) as elapsed from (SELECT sqltext.TEXT as sqltext,req.wait_type as wait_type,count(*) as cnt, sum(req.total_elapsed_time) elapsed FROM sys.dm_exec_requests req CROSS APPLY sys.dm_exec_sql_text(sql_handle) AS sqltext where wait_type is not NULL group by sqltext.TEXT, req.wait_type having count(*)>1) a group by a.sqltext order by 3 desc;
+GO
+--- Transactions per minute for the entire repository (doesn't count updates)
+--- light dimming, limited to last hour
+select CUR_MINUTE as timegroup, count(*) from (select CONVERT(VARCHAR,DATEADD(s,ROUND(DATEDIFF(s,'1970-01-01 00:00:00',FIRST_SEEN_DT)/60,0)*60,'1970-01-01 00:00:00'),20) as CUR_MINUTE from DSRC_RECORD WITH (NOLOCK) where FIRST_SEEN_DT > DATEADD(hh, -1, GETDATE())) a group by CUR_MINUTE order by CUR_MINUTE ASC;
+GO
+--- Entire historical overall perf (only good for single large batch loads), could add where FIRST_SEEN_DT > ? to limit it to recent
+--- light dimming, limited to last hour
+select min(FIRST_SEEN_DT) load_start, count(*) / (DATEDIFF(s,min(FIRST_SEEN_DT),max(FIRST_SEEN_DT))/60) erpm, count(*) total, DATEDIFF(mi,min(FIRST_SEEN_DT),max(FIRST_SEEN_DT))/(60.0*24.0) duration from DSRC_RECORD WITH (NOLOCK) where FIRST_SEEN_DT > DATEADD(hh, -1, GETDATE());
 
 ```
 
