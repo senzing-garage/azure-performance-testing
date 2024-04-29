@@ -1,0 +1,269 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sz-script-configmap
+data:
+  sz-run-loader.sh: |
+    #!/bin/bash
+    apt-get update
+    ACCEPT_EULA=Y apt-get -y install \
+      libaio1 libodbc1 libxml2 \
+      python3 python3-dev python3-pip python3-venv unixodbc
+    wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg
+    wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list
+    apt-get update
+    ACCEPT_EULA=Y apt-get -y install \
+      msodbcsql17 mssql-tools
+    python3 -m venv /app/venv
+    export PATH="/app/venv/bin:$PATH"
+    wget -qO - https://raw.githubusercontent.com/roncewind/sz_sb_consumer/main/requirement.txt  > /app/requirements.txt
+    cd /app
+    pip3 install --upgrade pip
+    pip3 install -r requirements.txt
+    pip3 install orjson
+    pip3 install azure-servicebus
+    wget -qO - https://raw.githubusercontent.com/roncewind/sz_sb_consumer/main/sz_sb_consumer.py > /app/sz_sb_consumer.py
+    chmod +x /app/sz_sb_consumer.py
+    echo 'export VIRTUAL_ENV=/app/venv' >> ~/.bashrc
+    echo 'export PATH="/app/venv/bin:$PATH:/opt/mssql-tools/bin:/opt/senzing/g2/python:/opt/IBM/db2/clidriver/adm:/opt/IBM/db2/clidriver/bin"' >> ~/.bashrc
+    echo 'export PYTHONPATH="$PYTHONPATH:/opt/senzing/g2/sdk/python:/app"' >> ~/.bashrc
+    echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/senzing/g2/lib:/opt/senzing/g2/lib/debian:/opt/IBM/db2/clidriver/lib"' >> ~/.bashrc
+    echo 'export SENZING_DOCKER_LAUNCHED=true' >> ~/.bashrc
+    echo 'export PYTHONUNBUFFERED=1' >> ~/.bashrc
+    source ~/.bashrc
+    /app/sz_sb_consumer.py
+  sz-run-redoer.sh: |
+    #!/bin/bash
+    apt-get update
+    ACCEPT_EULA=Y apt-get -y install \
+      libaio1 libodbc1 libxml2 \
+      python3 python3-dev python3-pip python3-venv unixodbc
+    wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg
+    wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list
+    apt-get update
+    ACCEPT_EULA=Y apt-get -y install \
+      msodbcsql17 mssql-tools
+    python3 -m venv /app/venv
+    export PATH="/app/venv/bin:$PATH"
+    cd /app
+    pip3 install --upgrade pip
+    pip3 install -r requirements.txt
+    pip3 install orjson
+    pip3 install azure-servicebus
+    wget -qO - https://raw.githubusercontent.com/brianmacy/sz_simple_redoer/mssql/sz_simple_redoer.py > /app/sz_simple_redoer.py
+    chmod +x /app/sz_simple_redoer.py
+    echo 'export VIRTUAL_ENV=/app/venv' >> ~/.bashrc
+    echo 'export PATH="/app/venv/bin:$PATH:/opt/mssql-tools/bin:/opt/senzing/g2/python:/opt/IBM/db2/clidriver/adm:/opt/IBM/db2/clidriver/bin"' >> ~/.bashrc
+    echo 'export PYTHONPATH="$PYTHONPATH:/opt/senzing/g2/sdk/python:/app"' >> ~/.bashrc
+    echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/senzing/g2/lib:/opt/senzing/g2/lib/debian:/opt/IBM/db2/clidriver/lib"' >> ~/.bashrc
+    echo 'export SENZING_DOCKER_LAUNCHED=true' >> ~/.bashrc
+    echo 'export PYTHONUNBUFFERED=1' >> ~/.bashrc
+    source ~/.bashrc
+    # while true; do echo grumble $(date); sleep 600;done
+    /app/sz_simple_redoer.py
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sz-loader
+spec:
+  replicas: 8
+  selector:
+    matchLabels:
+      app: sz-loader
+  template:
+    metadata:
+      labels:
+        app: sz-loader
+    spec:
+      volumes:
+        - name: sz-script-volume
+          configMap:
+            defaultMode: 0700
+            name: sz-script-configmap
+      containers:
+        - name: sz-loader
+          image: 'public.ecr.aws/senzing/senzingapi-runtime:staging'
+          resources:
+            requests:
+              cpu: '3.5'
+              memory: '30Gi'
+            # limits:
+            #   cpu: 4.0
+            #   memory: 30Gi
+          env:
+            - name: 'AZURE_ANIMAL'
+              value: '${AZURE_ANIMAL}'
+            - name: 'LC_CTYPE'
+              value: 'en_US.utf8'
+            - name: 'SENZING_AZURE_QUEUE_CONNECTION_STRING'
+              value: '${SENZING_AZURE_QUEUE_CONNECTION_STRING}'
+            - name: 'SENZING_AZURE_QUEUE_NAME'
+              value: '${SENZING_AZURE_QUEUE_NAME}'
+            - name: 'SENZING_DEBUG'
+              value: 'False'
+            - name: 'SENZING_DELAY_IN_SECONDS'
+              value: '900'
+            - name: 'SENZING_DELAY_RANDOMIZED'
+              value: 'true'
+            - name: 'SENZING_ENGINE_CONFIGURATION_JSON'
+              value: '${SENZING_ENGINE_CONFIGURATION_JSON}'
+            - name: 'SENZING_LOG_LEVEL'
+              value: 'info'
+            - name: 'SENZING_MONITORING_PERIOD_IN_SECONDS'
+              value: '600'
+            - name: 'SENZING_PRIME_ENGINE'
+              value: 'true'
+            - name: 'SENZING_SKIP_DATABASE_PERFORMANCE_TEST'
+              value: 'true'
+            - name: 'SENZING_SUBCOMMAND'
+              value: 'azure-queue'
+            - name: 'SENZING_THREADS_PER_PROCESS'
+              value: '20'
+          command: ['/bin/bash', '-c']
+          args: ['/init/sz-run-loader.sh']
+          # args: ['while true; do echo grumble $(date); sleep 600;done']
+          volumeMounts:
+            - name: sz-script-volume
+              mountPath: /init/
+              readOnly: true
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: sz-loader
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: sz-loader
+  minReplicas: 1
+  maxReplicas: 100
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 30
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 50
+# status:
+#   observedGeneration: 1
+#   lastScaleTime: <some-time>
+#   currentReplicas: 1
+#   desiredReplicas: 1
+#   currentMetrics:
+#     - type: Resource
+#       resource:
+#         name: cpu
+#         current:
+#           averageUtilization: 0
+#           averageValue: 0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sz-redoer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sz-redoer
+  template:
+    metadata:
+      labels:
+        app: sz-redoer
+    spec:
+      volumes:
+        - name: sz-script-volume
+          configMap:
+            defaultMode: 0700
+            name: sz-script-configmap
+      containers:
+        - name: sz-redoer
+          image: 'public.ecr.aws/senzing/senzingapi-runtime:staging'
+          resources:
+            requests:
+              cpu: '3.5'
+              memory: '30Gi'
+            # limits:
+            #   cpu: 4.0
+            #   memory: 30Gi
+          env:
+            - name: 'AZURE_ANIMAL'
+              value: '${AZURE_ANIMAL}'
+            - name: 'LC_CTYPE'
+              value: 'en_US.utf8'
+            - name: 'SENZING_AZURE_QUEUE_CONNECTION_STRING'
+              value: '${SENZING_AZURE_QUEUE_CONNECTION_STRING}'
+            - name: 'SENZING_AZURE_QUEUE_NAME'
+              value: '${SENZING_AZURE_QUEUE_NAME}'
+            - name: 'SENZING_DEBUG'
+              value: 'False'
+            - name: 'SENZING_DELAY_IN_SECONDS'
+              value: '900'
+            - name: 'SENZING_DELAY_RANDOMIZED'
+              value: 'true'
+            - name: 'SENZING_ENGINE_CONFIGURATION_JSON'
+              value: '${SENZING_ENGINE_CONFIGURATION_JSON}'
+            - name: 'SENZING_LOG_LEVEL'
+              value: 'info'
+            - name: 'SENZING_MONITORING_PERIOD_IN_SECONDS'
+              value: '600'
+            - name: 'SENZING_PRIME_ENGINE'
+              value: 'true'
+            - name: 'SENZING_SKIP_DATABASE_PERFORMANCE_TEST'
+              value: 'true'
+            - name: 'SENZING_SUBCOMMAND'
+              value: 'azure-queue'
+            - name: 'SENZING_THREADS_PER_PROCESS'
+              value: '20'
+          command: ['/bin/bash', '-c']
+          args: ['/init/sz-run-redoer.sh']
+          # args: ['while true; do echo grumble $(date); sleep 600;done']
+          volumeMounts:
+            - name: sz-script-volume
+              mountPath: /init/
+              readOnly: true
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: sz-redoer
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: sz-redoer
+  minReplicas: 1
+  maxReplicas: 100
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 30
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 50
+# status:
+#   observedGeneration: 1
+#   lastScaleTime: <some-time>
+#   currentReplicas: 1
+#   desiredReplicas: 1
+#   currentMetrics:
+#     - type: Resource
+#       resource:
+#         name: cpu
+#         current:
+#           averageUtilization: 0
+#           averageValue: 0
