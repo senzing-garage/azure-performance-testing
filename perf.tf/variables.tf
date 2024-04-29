@@ -1,22 +1,22 @@
 variable "number_of_records" {
   type        = string
   description = "Number of records to put into the queue for processing"
-  default     = "100000"
+  default     = "20000000"
 }
 
-variable "senzingapi-tools-image" {
+variable "senzingapi_tools_image" {
   type        = string
   description = "Repo for the Senzing API Tools image"
   default     = "public.ecr.aws/senzing/senzingapi-tools:staging"
 }
 
-variable "senzing-producer-image" {
+variable "senzing_producer_image" {
   type        = string
   description = "Repo for the Senzing producer image"
   default     = "docker.io/senzing/stream-producer:1.8.7"
 }
 
-variable "senzing-loader-image" {
+variable "senzing_loader_image" {
   type        = string
   description = "Repo for the Senzing loader image"
   default     = "public.ecr.aws/senzing/senzingapi-runtime:staging"
@@ -30,7 +30,7 @@ variable "test_data_url" {
   default     = "https://public-read-access.s3.amazonaws.com/TestDataSets/test-dataset-100m.json.gz"
 }
 
-variable "database-sku" {
+variable "database_sku" {
   type        = string
   description = "SKU for the database to use"
   # default     = "S0"

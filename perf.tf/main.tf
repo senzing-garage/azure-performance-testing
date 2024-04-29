@@ -52,7 +52,7 @@ resource "azurerm_mssql_database" "db" {
   collation = "Latin1_General_100_CS_AI_SC_UTF8"
   # max_size_gb    = 4
   # read_scale     = true
-  sku_name = var.database-sku
+  sku_name = var.database_sku
   # zone_redundant = true
   # enclave_type   = "VBS"
 }

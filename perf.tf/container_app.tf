@@ -20,7 +20,7 @@ resource "azurerm_container_app" "sz_init_database_app" {
     # Senzing Init Container, used to initialize the database
     init_container {
       name    = "${random_pet.rg_name.id}-init-database"
-      image   = var.senzingapi-tools-image
+      image   = var.senzingapi_tools_image
       cpu     = 0.5
       memory  = "1.0Gi"
       command = ["/bin/bash", "-c", var.db_init_command]
@@ -54,7 +54,7 @@ resource "azurerm_container_app" "sz_init_database_app" {
     # Senzing Producer, sends data to Azure Queue
     init_container {
       name   = "${random_pet.rg_name.id}-senzing-producer"
-      image  = var.senzing-producer-image
+      image  = var.senzing_producer_image
       cpu    = 0.5
       memory = "1.0Gi"
       # command = ["/bin/bash", "-c", "while true; do echo grumble $(date); sleep 600;done"]
@@ -124,7 +124,7 @@ resource "azurerm_container_app" "sz_init_database_app" {
     # Senzing API Tools, used to inspect the database and run tool commands
     container {
       name    = "${random_pet.rg_name.id}-senzingapi-tools"
-      image   = var.senzingapi-tools-image
+      image   = var.senzingapi_tools_image
       cpu     = 0.5
       memory  = "1.0Gi"
       command = ["/bin/bash", "-c", var.use_mstools_init_command]
