@@ -203,6 +203,7 @@ kubectl get pods --watch
 kubectl get pod <pod name>
 kubectl logs <pod_name>
 kubectl exec --stdin --tty <pod name> -- /bin/bash
+# install some tools:  apt update && apt install procps
 kubectl get deployment
 kubectl delete deployment <deployment name>
 ```
