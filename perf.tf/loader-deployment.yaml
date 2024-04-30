@@ -59,7 +59,6 @@ data:
     echo 'export SENZING_DOCKER_LAUNCHED=true' >> ~/.bashrc
     echo 'export PYTHONUNBUFFERED=1' >> ~/.bashrc
     source ~/.bashrc
-    # while true; do echo grumble $(date); sleep 600;done
     /app/sz_simple_redoer.py
 ---
 apiVersion: apps/v1
@@ -86,8 +85,8 @@ spec:
           image: 'public.ecr.aws/senzing/senzingapi-runtime:staging'
           resources:
             requests:
-              cpu: '3.5'
-              memory: '30Gi'
+              cpu: '3'
+              memory: '15Gi'
             # limits:
             #   cpu: 4.0
             #   memory: 30Gi
@@ -138,7 +137,7 @@ spec:
     kind: Deployment
     name: sz-loader
   minReplicas: 1
-  maxReplicas: 100
+  maxReplicas: 200
   metrics:
     - type: Resource
       resource:

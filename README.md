@@ -12,6 +12,10 @@
 - update any other vars
 - TODO: how to inject senzing license?
 
+### in environment:
+
+- `export TF_VAR_senzing_license_string=<license_string>`
+
 ## bring up the stack:
 
 ```
@@ -215,9 +219,9 @@ kubectl delete deployment <deployment name>
 
 ```
 # assumes: export AZURE_ANIMAL=sz-sensible-dodo
-az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-ca --follow
-az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-ca --container $AZURE_ANIMAL-init-database
-az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-ca --container $AZURE_ANIMAL-senzing-producer
+az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-init-db-ca --follow
+az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-init-db-ca --container $AZURE_ANIMAL-init-database
+az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-init-db-ca --container $AZURE_ANIMAL-senzing-producer
 ```
 
 ### Attach to running container in a container app:

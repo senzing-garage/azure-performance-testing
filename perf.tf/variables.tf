@@ -1,7 +1,7 @@
 variable "number_of_records" {
   type        = string
   description = "Number of records to put into the queue for processing"
-  default     = "20000000"
+  default     = "2000000"
 }
 
 variable "senzingapi_tools_image" {
@@ -22,6 +22,11 @@ variable "senzing_loader_image" {
   default     = "public.ecr.aws/senzing/senzingapi-runtime:staging"
   # default     = "public.ecr.aws/senzing/stream-loader:staging"
   # default     = "public.ecr.aws/senzing/sz_sqs_consumer:staging"
+}
+
+variable "senzing_license_string" {
+  type        = string
+  description = "License string for Senzing."
 }
 
 variable "test_data_url" {
@@ -74,7 +79,7 @@ locals {
         {
             "PIPELINE": {
                 "CONFIGPATH": "/etc/opt/senzing",
-                "LICENSESTRINGBASE64": "{license_string}",
+                "LICENSESTRINGBASE64": "${var.senzing_license_string}",
                 "RESOURCEPATH": "/opt/senzing/g2/resources",
                 "SUPPORTPATH": "/opt/senzing/data"
             },
