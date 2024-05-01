@@ -1,7 +1,7 @@
 ######################################################
 # record producer container instances
 resource "azurerm_container_group" "sz_producer_0" {
-  name                = "${random_pet.rg_name.id}-continst"
+  name                = "${random_pet.rg_name.id}-continst-0"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   ip_address_type     = "None"
@@ -113,7 +113,7 @@ resource "azurerm_container_group" "sz_producer_0" {
 }
 
 resource "azurerm_container_group" "sz_producer_1" {
-  name                = "${random_pet.rg_name.id}-continst"
+  name                = "${random_pet.rg_name.id}-continst-1"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   ip_address_type     = "None"
