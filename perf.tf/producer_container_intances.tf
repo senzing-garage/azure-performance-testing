@@ -27,7 +27,7 @@ resource "azurerm_container_group" "sz_producer_0" {
       "SENZING_INPUT_URL"                     = var.test_data_url
       "SENZING_MONITORING_PERIOD_IN_SECONDS"  = "60"
       "SENZING_READ_QUEUE_MAXSIZE"            = "200"
-      "SENZING_RECORD_MAX"                    = var.number_of_records / 4
+      "SENZING_RECORD_MAX"                    = var.number_of_records / 8
       "SENZING_RECORD_MIN"                    = "0"
       "SENZING_RECORD_MONITOR"                = "100000"
       "SENZING_RECORDS_PER_MESSAGE"           = "10"
@@ -52,8 +52,8 @@ resource "azurerm_container_group" "sz_producer_0" {
       "SENZING_INPUT_URL"                     = var.test_data_url
       "SENZING_MONITORING_PERIOD_IN_SECONDS"  = "60"
       "SENZING_READ_QUEUE_MAXSIZE"            = "200"
-      "SENZING_RECORD_MAX"                    = (var.number_of_records / 4) * 2
-      "SENZING_RECORD_MIN"                    = (var.number_of_records / 4) + 1
+      "SENZING_RECORD_MAX"                    = (var.number_of_records / 8) * 2
+      "SENZING_RECORD_MIN"                    = (var.number_of_records / 8) + 1
       "SENZING_RECORD_MONITOR"                = "100000"
       "SENZING_RECORDS_PER_MESSAGE"           = "10"
       "SENZING_SUBCOMMAND"                    = "gzipped-json-to-azure-queue"
@@ -77,8 +77,8 @@ resource "azurerm_container_group" "sz_producer_0" {
       "SENZING_INPUT_URL"                     = var.test_data_url
       "SENZING_MONITORING_PERIOD_IN_SECONDS"  = "60"
       "SENZING_READ_QUEUE_MAXSIZE"            = "200"
-      "SENZING_RECORD_MAX"                    = (var.number_of_records / 4) * 3
-      "SENZING_RECORD_MIN"                    = ((var.number_of_records / 4) * 2) + 1
+      "SENZING_RECORD_MAX"                    = (var.number_of_records / 8) * 3
+      "SENZING_RECORD_MIN"                    = ((var.number_of_records / 8) * 2) + 1
       "SENZING_RECORD_MONITOR"                = "100000"
       "SENZING_RECORDS_PER_MESSAGE"           = "10"
       "SENZING_SUBCOMMAND"                    = "gzipped-json-to-azure-queue"
@@ -102,8 +102,8 @@ resource "azurerm_container_group" "sz_producer_0" {
       "SENZING_INPUT_URL"                     = var.test_data_url
       "SENZING_MONITORING_PERIOD_IN_SECONDS"  = "60"
       "SENZING_READ_QUEUE_MAXSIZE"            = "200"
-      "SENZING_RECORD_MAX"                    = (var.number_of_records / 4) * 4
-      "SENZING_RECORD_MIN"                    = ((var.number_of_records / 4) * 3) + 1
+      "SENZING_RECORD_MAX"                    = (var.number_of_records / 8) * 4
+      "SENZING_RECORD_MIN"                    = ((var.number_of_records / 8) * 3) + 1
       "SENZING_RECORD_MONITOR"                = "100000"
       "SENZING_RECORDS_PER_MESSAGE"           = "10"
       "SENZING_SUBCOMMAND"                    = "gzipped-json-to-azure-queue"
@@ -139,8 +139,8 @@ resource "azurerm_container_group" "sz_producer_1" {
       "SENZING_INPUT_URL"                     = var.test_data_url
       "SENZING_MONITORING_PERIOD_IN_SECONDS"  = "60"
       "SENZING_READ_QUEUE_MAXSIZE"            = "200"
-      "SENZING_RECORD_MAX"                    = (var.number_of_records / 4) * 5
-      "SENZING_RECORD_MIN"                    = ((var.number_of_records / 4) * 4) + 1
+      "SENZING_RECORD_MAX"                    = (var.number_of_records / 8) * 5
+      "SENZING_RECORD_MIN"                    = ((var.number_of_records / 8) * 4) + 1
       "SENZING_RECORD_MONITOR"                = "100000"
       "SENZING_RECORDS_PER_MESSAGE"           = "10"
       "SENZING_SUBCOMMAND"                    = "gzipped-json-to-azure-queue"
@@ -164,8 +164,8 @@ resource "azurerm_container_group" "sz_producer_1" {
       "SENZING_INPUT_URL"                     = var.test_data_url
       "SENZING_MONITORING_PERIOD_IN_SECONDS"  = "60"
       "SENZING_READ_QUEUE_MAXSIZE"            = "200"
-      "SENZING_RECORD_MAX"                    = (var.number_of_records / 4) * 6
-      "SENZING_RECORD_MIN"                    = ((var.number_of_records / 4) * 5) + 1
+      "SENZING_RECORD_MAX"                    = (var.number_of_records / 8) * 6
+      "SENZING_RECORD_MIN"                    = ((var.number_of_records / 8) * 5) + 1
       "SENZING_RECORD_MONITOR"                = "100000"
       "SENZING_RECORDS_PER_MESSAGE"           = "10"
       "SENZING_SUBCOMMAND"                    = "gzipped-json-to-azure-queue"
@@ -189,8 +189,8 @@ resource "azurerm_container_group" "sz_producer_1" {
       "SENZING_INPUT_URL"                     = var.test_data_url
       "SENZING_MONITORING_PERIOD_IN_SECONDS"  = "60"
       "SENZING_READ_QUEUE_MAXSIZE"            = "200"
-      "SENZING_RECORD_MAX"                    = (var.number_of_records / 4) * 7
-      "SENZING_RECORD_MIN"                    = ((var.number_of_records / 4) * 6) + 1
+      "SENZING_RECORD_MAX"                    = (var.number_of_records / 8) * 7
+      "SENZING_RECORD_MIN"                    = ((var.number_of_records / 8) * 6) + 1
       "SENZING_RECORD_MONITOR"                = "100000"
       "SENZING_RECORDS_PER_MESSAGE"           = "10"
       "SENZING_SUBCOMMAND"                    = "gzipped-json-to-azure-queue"
@@ -215,7 +215,7 @@ resource "azurerm_container_group" "sz_producer_1" {
       "SENZING_MONITORING_PERIOD_IN_SECONDS"  = "60"
       "SENZING_READ_QUEUE_MAXSIZE"            = "200"
       "SENZING_RECORD_MAX"                    = var.number_of_records
-      "SENZING_RECORD_MIN"                    = ((var.number_of_records / 4) * 7) + 1
+      "SENZING_RECORD_MIN"                    = ((var.number_of_records / 8) * 7) + 1
       "SENZING_RECORD_MONITOR"                = "100000"
       "SENZING_RECORDS_PER_MESSAGE"           = "10"
       "SENZING_SUBCOMMAND"                    = "gzipped-json-to-azure-queue"
