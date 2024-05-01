@@ -10,7 +10,6 @@
 
 - set appropriate number of records to run
 - update any other vars
-- TODO: how to inject senzing license?
 
 ### in environment:
 
@@ -203,7 +202,8 @@ kubectl get pods --watch
 kubectl get pod <pod name>
 kubectl logs <pod_name>
 kubectl exec --stdin --tty <pod name> -- /bin/bash
-# install some tools:  apt update && apt install procps
+# install some tools:  apt update && apt install procps gdb
+# gdb: gdb -p <PID> -batch -ex 'thread apply all bt' > foo
 kubectl get deployment
 kubectl delete deployment <deployment name>
 ```
@@ -301,9 +301,13 @@ sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$
 
 
 ```
+isql "DRIVER={ODBC Driver 17 for SQL Server}; SERVER=$AZURE_ANIMAL-mssql-server.database.windows.net; DATABASE=G2; PORT=1433; UID=senzing; PWD=$SENZING_DB_PWD" -v
+
+isql "Driver={ODBC Driver 17 for SQL Server};Server=tcp:sz-closing-dory-mssql-server.database.windows.net,1433;Database=G2;Uid=senzing;Pwd=mJz4U5FTfAx9wsSR3kJ9;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;" -v
+
 # queries from the perf page:
 --- Currently waiting
-select sqltext, CAST (STRING_AGG(wait_type, "|") as varchar(50)), sum(cnt) as cnt, sum(elapsed) as elapsed from (SELECT sqltext.TEXT as sqltext,req.wait_type as wait_type,count(*) as cnt, sum(req.total_elapsed_time) elapsed FROM sys.dm_exec_requests req CROSS APPLY sys.dm_exec_sql_text(sql_handle) AS sqltext where wait_type is not NULL group by sqltext.TEXT, req.wait_type having count(*)>1) a group by a.sqltext order by 3 desc;
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select sqltext, CAST (STRING_AGG(wait_type, \"|\") as varchar(50)), sum(cnt) as cnt, sum(elapsed) as elapsed from (SELECT sqltext.TEXT as sqltext,req.wait_type as wait_type,count(*) as cnt, sum(req.total_elapsed_time) elapsed FROM sys.dm_exec_requests req CROSS APPLY sys.dm_exec_sql_text(sql_handle) AS sqltext where wait_type is not NULL group by sqltext.TEXT, req.wait_type having count(*)>1) a group by a.sqltext order by 3 desc;"
 GO
 --- Transactions per minute for the entire repository (doesn't count updates)
 --- light dimming, limited to last hour

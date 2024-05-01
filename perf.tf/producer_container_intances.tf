@@ -6,14 +6,14 @@ resource "azurerm_container_group" "sz_producer_0" {
   resource_group_name = azurerm_resource_group.rg.name
   ip_address_type     = "None"
   os_type             = "Linux"
-  restart_policy      = "Never"
+  restart_policy      = "OnFailure"
   depends_on          = [azurerm_servicebus_queue.sz_queue]
 
   # Senzing Producer, sends data to Azure Queue
   container {
     name   = "${random_pet.rg_name.id}-senzing-producer-0"
     image  = var.senzing_producer_image
-    cpu    = 1
+    cpu    = 0.5
     memory = "2.0"
     # command = ["/bin/bash", "-c", "while true; do echo grumble $(date); sleep 600;done"]
 
@@ -38,7 +38,7 @@ resource "azurerm_container_group" "sz_producer_0" {
   container {
     name   = "${random_pet.rg_name.id}-senzing-producer-1"
     image  = var.senzing_producer_image
-    cpu    = 1
+    cpu    = 0.5
     memory = "2.0"
     # command = ["/bin/bash", "-c", "while true; do echo grumble $(date); sleep 600;done"]
 
@@ -63,7 +63,7 @@ resource "azurerm_container_group" "sz_producer_0" {
   container {
     name   = "${random_pet.rg_name.id}-senzing-producer-2"
     image  = var.senzing_producer_image
-    cpu    = 1
+    cpu    = 0.5
     memory = "2.0"
     # command = ["/bin/bash", "-c", "while true; do echo grumble $(date); sleep 600;done"]
 
@@ -88,7 +88,7 @@ resource "azurerm_container_group" "sz_producer_0" {
   container {
     name   = "${random_pet.rg_name.id}-senzing-producer-3"
     image  = var.senzing_producer_image
-    cpu    = 1
+    cpu    = 0.5
     memory = "2.0"
     # command = ["/bin/bash", "-c", "while true; do echo grumble $(date); sleep 600;done"]
 
@@ -118,14 +118,14 @@ resource "azurerm_container_group" "sz_producer_1" {
   resource_group_name = azurerm_resource_group.rg.name
   ip_address_type     = "None"
   os_type             = "Linux"
-  restart_policy      = "Never"
+  restart_policy      = "OnFailure"
   depends_on          = [azurerm_servicebus_queue.sz_queue]
 
   # Senzing Producer, sends data to Azure Queue
   container {
-    name   = "${random_pet.rg_name.id}-senzing-producer-0"
+    name   = "${random_pet.rg_name.id}-senzing-producer-10"
     image  = var.senzing_producer_image
-    cpu    = 1
+    cpu    = 0.5
     memory = "2.0"
     # command = ["/bin/bash", "-c", "while true; do echo grumble $(date); sleep 600;done"]
 
@@ -148,9 +148,9 @@ resource "azurerm_container_group" "sz_producer_1" {
     }
   }
   container {
-    name   = "${random_pet.rg_name.id}-senzing-producer-1"
+    name   = "${random_pet.rg_name.id}-senzing-producer-11"
     image  = var.senzing_producer_image
-    cpu    = 1
+    cpu    = 0.5
     memory = "2.0"
     # command = ["/bin/bash", "-c", "while true; do echo grumble $(date); sleep 600;done"]
 
@@ -173,9 +173,9 @@ resource "azurerm_container_group" "sz_producer_1" {
     }
   }
   container {
-    name   = "${random_pet.rg_name.id}-senzing-producer-2"
+    name   = "${random_pet.rg_name.id}-senzing-producer-12"
     image  = var.senzing_producer_image
-    cpu    = 1
+    cpu    = 0.5
     memory = "2.0"
     # command = ["/bin/bash", "-c", "while true; do echo grumble $(date); sleep 600;done"]
 
@@ -198,9 +198,9 @@ resource "azurerm_container_group" "sz_producer_1" {
     }
   }
   container {
-    name   = "${random_pet.rg_name.id}-senzing-producer-3"
+    name   = "${random_pet.rg_name.id}-senzing-producer-13"
     image  = var.senzing_producer_image
-    cpu    = 1
+    cpu    = 0.5
     memory = "2.0"
     # command = ["/bin/bash", "-c", "while true; do echo grumble $(date); sleep 600;done"]
 

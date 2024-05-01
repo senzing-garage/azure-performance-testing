@@ -66,7 +66,7 @@ kind: Deployment
 metadata:
   name: sz-loader
 spec:
-  replicas: 8
+  replicas: 1
   selector:
     matchLabels:
       app: sz-loader
@@ -74,6 +74,11 @@ spec:
     metadata:
       labels:
         app: sz-loader
+      # securityContext:
+      #   privileged: true
+      # runAsUser: 1000
+      # runAsGroup: 1000
+      # fsGroup: 1000
     spec:
       volumes:
         - name: sz-script-volume
@@ -82,6 +87,9 @@ spec:
             name: sz-script-configmap
       containers:
         - name: sz-loader
+          securityContext:
+            capabilities:
+              add: ['SYS_PTRACE']
           image: 'public.ecr.aws/senzing/senzingapi-runtime:staging'
           resources:
             requests:

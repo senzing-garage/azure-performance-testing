@@ -7,9 +7,11 @@ resource "azurerm_resource_group" "rg" {
   location = var.resource_group_location
 }
 
-# resource "random_pet" "azurerm_mssql_server_name" {
-#   prefix = "sql"
-# }
+resource "azurerm_proximity_placement_group" "ppg" {
+  name                = "${random_pet.rg_name.id}-ppg"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+}
 
 resource "azurerm_mssql_firewall_rule" "firewall" {
   name             = "AllowAzureServices"
