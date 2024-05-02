@@ -279,6 +279,7 @@ sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "ALTER DATABASE G2 SET AUTO_CREATE_STATISTICS ON;"
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "ALTER DATABASE SCOPED CONFIGURATION SET MAXDOP = 1;"
 
+# MAXDOP ref: https://www.sqlshack.com/configure-the-max-degree-of-parallelism-maxdop-in-azure-sql-database/
 
 ### make sure the above worked:
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select delayed_durability, delayed_durability_desc, is_auto_create_stats_on, is_auto_update_stats_on from sys.databases;"

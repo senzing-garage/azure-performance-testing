@@ -40,8 +40,9 @@ variable "database_sku" {
   description = "SKU for the database to use"
   # default     = "S0"
   # default = "S3"
-  default = "HS_Gen5_8"
+  default = "HS_Gen5_16"
 }
+# ref: https://learn.microsoft.com/en-us/azure/azure-sql/database/resource-limits-vcore-single-databases?view=azuresql
 
 variable "prefix" {
   type        = string
