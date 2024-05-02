@@ -213,7 +213,7 @@ kubectl delete deployment <deployment name>
 apt update && apt install procps gdb less
 
 # take a look with gdb:
-gdb -p <PID> -batch -ex 'thread apply all bt' > dump.out
+gdb -p $(ps aux|grep python3 |grep -v grep|awk '{ print $2 }') -batch -ex 'thread apply all bt' > dump.out
 grep -P ':\d+$' dump.out | grep ' in ' | awk 'function basename(file, a, n) {
     n = split(file, a, "/")
     return a[n]
@@ -283,6 +283,7 @@ sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$
 
 ### make sure the above worked:
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select delayed_durability, delayed_durability_desc, is_auto_create_stats_on, is_auto_update_stats_on from sys.databases;"
+
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT [value] as CurrentMAXDOP FROM sys.database_scoped_configurations WHERE [name] = 'MAXDOP';"
 
 
