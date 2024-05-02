@@ -125,6 +125,7 @@ variable "db_init_command" {
       echo "ALTER DATABASE G2 SET DELAYED_DURABILITY = Forced;" > /tmp/alterdb.sql
       echo "ALTER DATABASE G2 SET AUTO_UPDATE_STATISTICS_ASYNC ON;" >> /tmp/alterdb.sql
       echo "ALTER DATABASE G2 SET AUTO_CREATE_STATISTICS ON;" >> /tmp/alterdb.sql
+      echo "ALTER DATABASE SCOPED CONFIGURATION SET MAXDOP = 1;" >> /tmp/alterdb.sql
       sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -i /tmp/alterdb.sql -o /tmp/alterdb.out
       echo "addDataSource CUSTOMERS" > /tmp/add.sz
       echo "addDataSource REFERENCE" >> /tmp/add.sz

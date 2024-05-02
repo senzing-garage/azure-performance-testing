@@ -93,8 +93,8 @@ spec:
           image: 'public.ecr.aws/senzing/senzingapi-runtime:staging'
           resources:
             requests:
-              cpu: '3'
-              memory: '15Gi'
+              cpu: '2'
+              memory: '10Gi'
             # limits:
             #   cpu: 4.0
             #   memory: 30Gi
@@ -126,7 +126,7 @@ spec:
             - name: 'SENZING_SUBCOMMAND'
               value: 'azure-queue'
             - name: 'SENZING_THREADS_PER_PROCESS'
-              value: '20'
+              value: '8'
           command: ['/bin/bash', '-c']
           args: ['/init/sz-run-loader.sh']
           # args: ['while true; do echo grumble $(date); sleep 600;done']

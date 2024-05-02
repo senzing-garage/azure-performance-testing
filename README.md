@@ -202,10 +202,26 @@ kubectl get pods --watch
 kubectl get pod <pod name>
 kubectl logs <pod_name>
 kubectl exec --stdin --tty <pod name> -- /bin/bash
-# install some tools:  apt update && apt install procps gdb
-# gdb: gdb -p <PID> -batch -ex 'thread apply all bt' > foo
 kubectl get deployment
 kubectl delete deployment <deployment name>
+```
+
+#### looking inside a consumer:
+
+```
+# install some tools:
+apt update && apt install procps gdb less
+
+# take a look with gdb:
+gdb -p <PID> -batch -ex 'thread apply all bt' > dump.out
+grep -P ':\d+$' dump.out | grep ' in ' | awk 'function basename(file, a, n) {
+    n = split(file, a, "/")
+    return a[n]
+  }
+{print $1" "$4" ",basename($NF)}' > summary.out
+
+awk '{print $2}' summary.out | sort | uniq -c | sort -n
+
 ```
 
 #### ref:
@@ -261,10 +277,12 @@ az sql db list-editions -l westus -o table
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "ALTER DATABASE G2 SET DELAYED_DURABILITY = Forced;"
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "ALTER DATABASE G2 SET AUTO_UPDATE_STATISTICS_ASYNC ON;"
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "ALTER DATABASE G2 SET AUTO_CREATE_STATISTICS ON;"
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "ALTER DATABASE SCOPED CONFIGURATION SET MAXDOP = 1;"
 
 
 ### make sure the above worked:
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select delayed_durability, delayed_durability_desc, is_auto_create_stats_on, is_auto_update_stats_on from sys.databases;"
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT [value] as CurrentMAXDOP FROM sys.database_scoped_configurations WHERE [name] = 'MAXDOP';"
 
 
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select * from sys.database_scoped_configurations;;"
