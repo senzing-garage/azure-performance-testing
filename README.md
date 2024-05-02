@@ -210,7 +210,7 @@ kubectl delete deployment <deployment name>
 
 ```
 # install some tools:
-apt update && apt install procps gdb less
+apt update && apt install -y procps gdb less
 
 # take a look with gdb:
 gdb -p $(ps aux|grep python3 |grep -v grep|awk '{ print $2 }') -batch -ex 'thread apply all bt' > dump.out

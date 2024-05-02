@@ -9,10 +9,10 @@ resource "azurerm_kubernetes_cluster" "sz_perf_cluster" {
     node_count = "4"
     # vm_size    = "standard_d5_v2"
     vm_size = "Standard_E8_v3"
-    # vm_size             = "Standard_E16_v3"
+    # vm_size                      = "Standard_E16_v3"
     enable_auto_scaling          = true
     min_count                    = 2
-    max_count                    = 10
+    max_count                    = 1000
     proximity_placement_group_id = azurerm_proximity_placement_group.ppg.id
   }
 
