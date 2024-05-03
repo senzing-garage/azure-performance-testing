@@ -1,7 +1,7 @@
 variable "number_of_records" {
   type        = string
   description = "Number of records to put into the queue for processing"
-  default     = "2000000"
+  default     = "10000000"
 }
 
 variable "senzingapi_tools_image" {
