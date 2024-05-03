@@ -12,7 +12,7 @@ resource "azurerm_kubernetes_cluster" "sz_perf_cluster" {
     # vm_size                      = "Standard_E16_v3"
     enable_auto_scaling          = true
     min_count                    = 2
-    max_count                    = 1000
+    max_count                    = 400 # kubenet limits to 400 nodes
     proximity_placement_group_id = azurerm_proximity_placement_group.ppg.id
   }
 
