@@ -145,7 +145,7 @@ spec:
     kind: Deployment
     name: sz-loader
   minReplicas: 1
-  maxReplicas: 300
+  maxReplicas: 350
   metrics:
     - type: Resource
       resource:
@@ -248,7 +248,7 @@ spec:
     kind: Deployment
     name: sz-redoer
   minReplicas: 1
-  maxReplicas: 100
+  maxReplicas: 50
   metrics:
     - type: Resource
       resource:
