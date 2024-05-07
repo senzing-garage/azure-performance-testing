@@ -18,7 +18,7 @@ resource "azurerm_proximity_placement_group" "ppg" {
 # Virtual Network
 resource "azurerm_virtual_network" "sz_network" {
   name                = "${random_pet.rg_name.id}-vnet"
-  address_space       = ["10.0.0.0/16"]
+  address_space       = ["10.0.0.0/8"]
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 }
@@ -28,7 +28,14 @@ resource "azurerm_subnet" "sz_subnet_1" {
   name                 = "subnet-1"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.sz_network.name
-  address_prefixes     = ["10.0.0.0/24"]
+  address_prefixes     = ["10.240.0.0/16"]
+}
+
+resource "azurerm_subnet" "sz_subnet_2" {
+  name                 = "subnet-2"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.sz_network.name
+  address_prefixes     = ["10.241.0.0/16"]
 }
 
 # Public IP address for NAT gateway

@@ -14,11 +14,13 @@ resource "azurerm_kubernetes_cluster" "sz_perf_cluster" {
     min_count                    = 2
     max_count                    = 400 # kubenet limits to 400 nodes
     proximity_placement_group_id = azurerm_proximity_placement_group.ppg.id
-    pod_subnet_id                = azurerm_subnet.sz_subnet_1.id
+    # pod_subnet_id                = azurerm_subnet.sz_subnet_1.id
+    vnet_subnet_id = azurerm_subnet.sz_subnet_2.id
   }
 
   network_profile {
     network_plugin = "azure"
+    network_policy = "azure"
   }
 
   identity {

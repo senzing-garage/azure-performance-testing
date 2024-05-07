@@ -8,7 +8,7 @@ resource "azurerm_container_group" "sz_producer_0" {
   os_type             = "Linux"
   restart_policy      = "OnFailure"
   depends_on          = [azurerm_servicebus_queue.sz_queue]
-  subnet_ids          = azurerm_subnet.sz_subnet_1[*].id
+  # subnet_ids          = azurerm_subnet.sz_subnet_1[*].id
 
   # Senzing Producer, sends data to Azure Queue
   container {
