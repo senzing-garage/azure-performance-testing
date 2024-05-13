@@ -6,11 +6,16 @@ data:
   sz-run-loader.sh: |
     #!/bin/bash
     apt-get update
+    apt-get -y install apt-transport-https wget
+    wget -qO ./senzingrepo_2.0.0-1_all.deb https://senzing-production-apt.s3.amazonaws.com/senzingrepo_2.0.0-1_all.deb
+    apt-get -y install ./senzingrepo_2.0.0-1_all.deb
+    apt-get update
+    apt-get -y install senzingapi
     ACCEPT_EULA=Y apt-get -y install \
       libaio1 libodbc1 libxml2 \
       python3 python3-dev python3-pip python3-venv unixodbc
     wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg
-    wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list
+    wget -qO - https://packages.microsoft.com/config/debian/12/prod.list > /etc/apt/sources.list.d/mssql-release.list
     apt-get update
     ACCEPT_EULA=Y apt-get -y install \
       msodbcsql17 mssql-tools
@@ -24,6 +29,15 @@ data:
     pip3 install azure-servicebus
     wget -qO - https://raw.githubusercontent.com/roncewind/sz_sb_consumer/main/sz_sb_consumer.py > /app/sz_sb_consumer.py
     chmod +x /app/sz_sb_consumer.py
+    # mkdir -p /etc/systemd/network
+    # cat > /etc/systemd/network/99-azure-unmanaged-devices.network <<EOF
+    # # Ignore SR-IOV interface on Azure, since it's transparently bonded
+    # # to the synthetic interface
+    # [Match]
+    # Driver=mlx4_en mlx5_en mlx4_core mlx5_core
+    # [Link]
+    # Unmanaged=yes
+    # EOF
     echo 'export VIRTUAL_ENV=/app/venv' >> ~/.bashrc
     echo 'export PATH="/app/venv/bin:$PATH:/opt/mssql-tools/bin:/opt/senzing/g2/python:/opt/IBM/db2/clidriver/adm:/opt/IBM/db2/clidriver/bin"' >> ~/.bashrc
     echo 'export PYTHONPATH="$PYTHONPATH:/opt/senzing/g2/sdk/python:/app"' >> ~/.bashrc
@@ -31,6 +45,7 @@ data:
     echo 'export SENZING_DOCKER_LAUNCHED=true' >> ~/.bashrc
     echo 'export PYTHONUNBUFFERED=1' >> ~/.bashrc
     source ~/.bashrc
+    # while true; do echo grumble $(date); sleep 600;done
     /app/sz_sb_consumer.py
   sz-run-redoer.sh: |
     #!/bin/bash
@@ -91,7 +106,7 @@ spec:
             capabilities:
               add: ['SYS_PTRACE']
           image: 'public.ecr.aws/senzing/senzingapi-runtime:staging'
-          resources:
+\          resources:
             requests:
               cpu: '2'
               memory: '10Gi'
@@ -128,8 +143,8 @@ spec:
             - name: 'SENZING_THREADS_PER_PROCESS'
               value: '8'
           command: ['/bin/bash', '-c']
-          args: ['/init/sz-run-loader.sh']
-          # args: ['while true; do echo grumble $(date); sleep 600;done']
+          # args: ['/init/sz-run-loader.sh']
+          args: ['while true; do echo grumble $(date); sleep 600;done']
           volumeMounts:
             - name: sz-script-volume
               mountPath: /init/

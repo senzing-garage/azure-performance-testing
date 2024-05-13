@@ -96,9 +96,10 @@ resource "azurerm_subnet" "sz_subnet_2" {
 
 # Create network interface for SSH vm
 resource "azurerm_network_interface" "sz_nic" {
-  name                = "nic-1"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  name                          = "nic-1"
+  location                      = azurerm_resource_group.rg.location
+  resource_group_name           = azurerm_resource_group.rg.name
+  enable_accelerated_networking = true
 
   ip_configuration {
     name                          = "sz_nic_configuration"
