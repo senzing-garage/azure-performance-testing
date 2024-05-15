@@ -11,9 +11,13 @@
 - set appropriate number of records to run
 - update any other vars
 
-### in environment:
+### in environment (once for the shell):
 
 - `export TF_VAR_senzing_license_string=<license_string>`
+
+### for az env (once for the shell):
+
+- [set up Azure CLI](#Azure-CLI)
 
 ## bring up the stack:
 
@@ -73,6 +77,38 @@ sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$
 
 - TODO
 
+----------------------------------------
+
+# Research notes:
+
+## Accelerated networking:
+
+### VMs
+
+- https://learn.microsoft.com/en-us/azure/virtual-network/accelerated-networking-overview?tabs=ubuntu
+- https://learn.microsoft.com/en-us/azure/virtual-network/accelerated-networking-how-it-works
+- https://learn.microsoft.com/en-us/azure/virtual-network/accelerated-networking-mana-linux
+
+## AKS nodes:
+
+- https://alwaysupalwayson.blogspot.com/2018/08/accelerated-networking-enabled-by.html
+  - `az network nic show -g <resource-group-where-the-nic-is> -n <nic-name> --query "enableAcceleratedNetworking"`
+- https://github.com/Azure/AKS/issues/366
+  - "AKS Team (Product Manager, Microsoft Azure) responded · November 13, 2018 This is now enabled automatically in AKS for supported VM SKUs."
+- https://www.kristhecodingunicorn.com/post/aks-nodes-accelerated-networking/
+
+## Proximity placement groups:
+
+### VMs
+
+- https://learn.microsoft.com/en-us/azure/virtual-machines/co-location
+- https://microsoft.github.io/AzureTipsAndTricks/blog/tip226.html
+
+## AKS nodes:
+
+- https://learn.microsoft.com/en-us/azure/aks/reduce-latency-ppg
+
+
 -------------------------------------------------------------------------------
 # NOTES:
 
@@ -87,7 +123,7 @@ sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$
     - https://learn.microsoft.com/en-us/azure/container-instances/tutorial-docker-compose
     - https://docs.docker.com/compose/compose-file/05-services/#scale
 
-## az - Azure CLI
+## Azure CLI
 
 - https://learn.microsoft.com/en-us/cli/azure/install-azure-cli
 
@@ -188,12 +224,6 @@ envsubst < loader-deployment.yaml | kubectl apply -f -
 # kubectl apply -f loader-deployment.yaml
 ```
 
-#### If you need to exec into one of the loader containers and test the database:
-
-- from local: `terraform output -json | jq -r ".db_admin_password.value"`
-- inside pod: `export SENZING_DB_PWD=<pwd>`
-- inside pod to get ps/top: `apt install procps`
-
 
 #### other commands:
 
@@ -207,6 +237,14 @@ kubectl delete deployment <deployment name>
 ```
 
 #### looking inside a consumer:
+
+##### if you need to work with the database from the consumer:
+
+- from local: `terraform output -json | jq -r ".db_admin_password.value"`
+- exec into pod: `kubectl exec --stdin --tty <pod name> -- /bin/bash`
+- inside pod: `export SENZING_DB_PWD=<pwd>`
+
+##### other useful tooling for inside the consumer pod:
 
 ```
 # install some tools:
@@ -404,9 +442,7 @@ Host name: sz-welcome-turtle-service-bus.servicebus.windows.net
 "id": "/subscriptions/5415bf99-6956-43fd-a8a9-434c958ca13c/resourceGroups/sz-welcome-turtle-rg/providers/Microsoft.ServiceBus/namespaces/sz-welcome-turtle-service-bus",
 
 
-### NOTES:
-
-#### references:
+## References:
 
 - terraform on azure: https://learn.microsoft.com/en-us/azure/developer/terraform/
 - resource group creation: https://learn.microsoft.com/en-us/azure/developer/terraform/create-resource-group?tabs=azure-cli
