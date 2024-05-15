@@ -1,27 +1,32 @@
 variable "number_of_records" {
   type        = string
   description = "Number of records to put into the queue for processing"
-  default     = "100000"
+  default     = "2000000"
 }
 
-variable "senzingapi-tools-image" {
+variable "senzingapi_tools_image" {
   type        = string
   description = "Repo for the Senzing API Tools image"
   default     = "public.ecr.aws/senzing/senzingapi-tools:staging"
 }
 
-variable "senzing-producer-image" {
+variable "senzing_producer_image" {
   type        = string
   description = "Repo for the Senzing producer image"
   default     = "docker.io/senzing/stream-producer:1.8.7"
 }
 
-variable "senzing-loader-image" {
+variable "senzing_loader_image" {
   type        = string
   description = "Repo for the Senzing loader image"
   default     = "public.ecr.aws/senzing/senzingapi-runtime:staging"
   # default     = "public.ecr.aws/senzing/stream-loader:staging"
   # default     = "public.ecr.aws/senzing/sz_sqs_consumer:staging"
+}
+
+variable "senzing_license_string" {
+  type        = string
+  description = "License string for Senzing."
 }
 
 variable "test_data_url" {
@@ -30,13 +35,15 @@ variable "test_data_url" {
   default     = "https://public-read-access.s3.amazonaws.com/TestDataSets/test-dataset-100m.json.gz"
 }
 
-variable "database-sku" {
+variable "database_sku" {
   type        = string
   description = "SKU for the database to use"
   # default     = "S0"
   # default = "S3"
-  default = "HS_Gen5_8"
+  # default = "HS_Gen5_16"
+  default = "HS_Gen5_32"
 }
+# ref: https://learn.microsoft.com/en-us/azure/azure-sql/database/resource-limits-vcore-single-databases?view=azuresql
 
 variable "prefix" {
   type        = string
@@ -74,7 +81,7 @@ locals {
         {
             "PIPELINE": {
                 "CONFIGPATH": "/etc/opt/senzing",
-                "LICENSESTRINGBASE64": "{license_string}",
+                "LICENSESTRINGBASE64": "${var.senzing_license_string}",
                 "RESOURCEPATH": "/opt/senzing/g2/resources",
                 "SUPPORTPATH": "/opt/senzing/data"
             },
@@ -120,6 +127,7 @@ variable "db_init_command" {
       echo "ALTER DATABASE G2 SET DELAYED_DURABILITY = Forced;" > /tmp/alterdb.sql
       echo "ALTER DATABASE G2 SET AUTO_UPDATE_STATISTICS_ASYNC ON;" >> /tmp/alterdb.sql
       echo "ALTER DATABASE G2 SET AUTO_CREATE_STATISTICS ON;" >> /tmp/alterdb.sql
+      echo "ALTER DATABASE SCOPED CONFIGURATION SET MAXDOP = 1;" >> /tmp/alterdb.sql
       sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -i /tmp/alterdb.sql -o /tmp/alterdb.out
       echo "addDataSource CUSTOMERS" > /tmp/add.sz
       echo "addDataSource REFERENCE" >> /tmp/add.sz

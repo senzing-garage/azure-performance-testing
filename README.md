@@ -10,7 +10,14 @@
 
 - set appropriate number of records to run
 - update any other vars
-- TODO: how to inject senzing license?
+
+### in environment (once for the shell):
+
+- `export TF_VAR_senzing_license_string=<license_string>`
+
+### for az env (once for the shell):
+
+- [set up Azure CLI](#Azure-CLI)
 
 ## bring up the stack:
 
@@ -70,6 +77,38 @@ sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$
 
 - TODO
 
+----------------------------------------
+
+# Research notes:
+
+## Accelerated networking:
+
+### VMs
+
+- https://learn.microsoft.com/en-us/azure/virtual-network/accelerated-networking-overview?tabs=ubuntu
+- https://learn.microsoft.com/en-us/azure/virtual-network/accelerated-networking-how-it-works
+- https://learn.microsoft.com/en-us/azure/virtual-network/accelerated-networking-mana-linux
+
+## AKS nodes:
+
+- https://alwaysupalwayson.blogspot.com/2018/08/accelerated-networking-enabled-by.html
+  - `az network nic show -g <resource-group-where-the-nic-is> -n <nic-name> --query "enableAcceleratedNetworking"`
+- https://github.com/Azure/AKS/issues/366
+  - "AKS Team (Product Manager, Microsoft Azure) responded · November 13, 2018 This is now enabled automatically in AKS for supported VM SKUs."
+- https://www.kristhecodingunicorn.com/post/aks-nodes-accelerated-networking/
+
+## Proximity placement groups:
+
+### VMs
+
+- https://learn.microsoft.com/en-us/azure/virtual-machines/co-location
+- https://microsoft.github.io/AzureTipsAndTricks/blog/tip226.html
+
+## AKS nodes:
+
+- https://learn.microsoft.com/en-us/azure/aks/reduce-latency-ppg
+
+
 -------------------------------------------------------------------------------
 # NOTES:
 
@@ -84,7 +123,7 @@ sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$
     - https://learn.microsoft.com/en-us/azure/container-instances/tutorial-docker-compose
     - https://docs.docker.com/compose/compose-file/05-services/#scale
 
-## az - Azure CLI
+## Azure CLI
 
 - https://learn.microsoft.com/en-us/cli/azure/install-azure-cli
 
@@ -185,12 +224,6 @@ envsubst < loader-deployment.yaml | kubectl apply -f -
 # kubectl apply -f loader-deployment.yaml
 ```
 
-#### If you need to exec into one of the loader containers and test the database:
-
-- from local: `terraform output -json | jq -r ".db_admin_password.value"`
-- inside pod: `export SENZING_DB_PWD=<pwd>`
-- inside pod to get ps/top: `apt install procps`
-
 
 #### other commands:
 
@@ -201,6 +234,32 @@ kubectl logs <pod_name>
 kubectl exec --stdin --tty <pod name> -- /bin/bash
 kubectl get deployment
 kubectl delete deployment <deployment name>
+```
+
+#### looking inside a consumer:
+
+##### if you need to work with the database from the consumer:
+
+- from local: `terraform output -json | jq -r ".db_admin_password.value"`
+- exec into pod: `kubectl exec --stdin --tty <pod name> -- /bin/bash`
+- inside pod: `export SENZING_DB_PWD=<pwd>`
+
+##### other useful tooling for inside the consumer pod:
+
+```
+# install some tools:
+apt update && apt install -y procps gdb less
+
+# take a look with gdb:
+gdb -p $(ps aux|grep python3 |grep -v grep|awk '{ print $2 }') -batch -ex 'thread apply all bt' > dump.out
+grep -P ':\d+$' dump.out | grep ' in ' | awk 'function basename(file, a, n) {
+    n = split(file, a, "/")
+    return a[n]
+  }
+{print $1" "$4" ",basename($NF)}' > summary.out
+
+awk '{print $2}' summary.out | sort | uniq -c | sort -n
+
 ```
 
 #### ref:
@@ -215,9 +274,9 @@ kubectl delete deployment <deployment name>
 
 ```
 # assumes: export AZURE_ANIMAL=sz-sensible-dodo
-az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-ca --follow
-az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-ca --container $AZURE_ANIMAL-init-database
-az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-ca --container $AZURE_ANIMAL-senzing-producer
+az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-init-db-ca --follow
+az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-init-db-ca --container $AZURE_ANIMAL-init-database
+az containerapp logs show --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-init-db-ca --container $AZURE_ANIMAL-senzing-producer
 ```
 
 ### Attach to running container in a container app:
@@ -256,10 +315,14 @@ az sql db list-editions -l westus -o table
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "ALTER DATABASE G2 SET DELAYED_DURABILITY = Forced;"
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "ALTER DATABASE G2 SET AUTO_UPDATE_STATISTICS_ASYNC ON;"
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "ALTER DATABASE G2 SET AUTO_CREATE_STATISTICS ON;"
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "ALTER DATABASE SCOPED CONFIGURATION SET MAXDOP = 1;"
 
+# MAXDOP ref: https://www.sqlshack.com/configure-the-max-degree-of-parallelism-maxdop-in-azure-sql-database/
 
 ### make sure the above worked:
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select delayed_durability, delayed_durability_desc, is_auto_create_stats_on, is_auto_update_stats_on from sys.databases;"
+
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT [value] as CurrentMAXDOP FROM sys.database_scoped_configurations WHERE [name] = 'MAXDOP';"
 
 
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select * from sys.database_scoped_configurations;;"
@@ -296,9 +359,13 @@ sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$
 
 
 ```
+isql "DRIVER={ODBC Driver 17 for SQL Server}; SERVER=$AZURE_ANIMAL-mssql-server.database.windows.net; DATABASE=G2; PORT=1433; UID=senzing; PWD=$SENZING_DB_PWD" -v
+
+isql "Driver={ODBC Driver 17 for SQL Server};Server=tcp:sz-closing-dory-mssql-server.database.windows.net,1433;Database=G2;Uid=senzing;Pwd=mJz4U5FTfAx9wsSR3kJ9;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;" -v
+
 # queries from the perf page:
 --- Currently waiting
-select sqltext, CAST (STRING_AGG(wait_type, "|") as varchar(50)), sum(cnt) as cnt, sum(elapsed) as elapsed from (SELECT sqltext.TEXT as sqltext,req.wait_type as wait_type,count(*) as cnt, sum(req.total_elapsed_time) elapsed FROM sys.dm_exec_requests req CROSS APPLY sys.dm_exec_sql_text(sql_handle) AS sqltext where wait_type is not NULL group by sqltext.TEXT, req.wait_type having count(*)>1) a group by a.sqltext order by 3 desc;
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select sqltext, CAST (STRING_AGG(wait_type, \"|\") as varchar(50)), sum(cnt) as cnt, sum(elapsed) as elapsed from (SELECT sqltext.TEXT as sqltext,req.wait_type as wait_type,count(*) as cnt, sum(req.total_elapsed_time) elapsed FROM sys.dm_exec_requests req CROSS APPLY sys.dm_exec_sql_text(sql_handle) AS sqltext where wait_type is not NULL group by sqltext.TEXT, req.wait_type having count(*)>1) a group by a.sqltext order by 3 desc;"
 GO
 --- Transactions per minute for the entire repository (doesn't count updates)
 --- light dimming, limited to last hour
@@ -375,9 +442,7 @@ Host name: sz-welcome-turtle-service-bus.servicebus.windows.net
 "id": "/subscriptions/5415bf99-6956-43fd-a8a9-434c958ca13c/resourceGroups/sz-welcome-turtle-rg/providers/Microsoft.ServiceBus/namespaces/sz-welcome-turtle-service-bus",
 
 
-### NOTES:
-
-#### references:
+## References:
 
 - terraform on azure: https://learn.microsoft.com/en-us/azure/developer/terraform/
 - resource group creation: https://learn.microsoft.com/en-us/azure/developer/terraform/create-resource-group?tabs=azure-cli
