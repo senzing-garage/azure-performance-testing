@@ -39,7 +39,8 @@ data:
     echo 'export SENZING_DOCKER_LAUNCHED=true' >> ~/.bashrc
     echo 'export PYTHONUNBUFFERED=1' >> ~/.bashrc
     source ~/.bashrc
-    /app/sz_sb_consumer.py
+    while true; do echo grumble args $(date); sleep 600;done
+    # /app/sz_sb_consumer.py
   sz-run-redoer.sh: |
     #!/bin/bash
     apt-get update
@@ -74,7 +75,7 @@ kind: Deployment
 metadata:
   name: sz-loader
 spec:
-  replicas: 8
+  replicas: 1
   selector:
     matchLabels:
       app: sz-loader

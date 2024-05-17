@@ -40,6 +40,12 @@ terraform output -json | jq -r '@sh "export AZURE_ANIMAL=\(.AZURE_ANIMAL.value)\
 source env.sh
 ```
 
+### get AKS credentials:
+
+```
+az aks get-credentials --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-cluster
+```
+
 ### deploy loaders:
 
 ```
@@ -248,7 +254,7 @@ kubectl delete deployment <deployment name>
 
 ```
 # install some tools:
-apt update && apt install -y procps gdb less
+apt update && apt install -y procps gdb less net-tools
 
 # take a look with gdb:
 gdb -p $(ps aux|grep python3 |grep -v grep|awk '{ print $2 }') -batch -ex 'thread apply all bt' > dump.out
@@ -325,7 +331,7 @@ sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT [value] as CurrentMAXDOP FROM sys.database_scoped_configurations WHERE [name] = 'MAXDOP';"
 
 
-sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select * from sys.database_scoped_configurations;;"
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select * from sys.database_scoped_configurations;"
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select * from sys.databases;"
 
 
