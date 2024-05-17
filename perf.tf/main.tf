@@ -218,6 +218,10 @@ resource "azurerm_private_endpoint" "sz_private_endpoint" {
     subresource_names              = [ "sqlServer" ]
     is_manual_connection           = false
   }
+  private_dns_zone_group {
+    name                 = "dns-zone-group"
+    private_dns_zone_ids = [azurerm_private_dns_zone.sz_dns_zone.id]
+  }
 }
 
 # Create private DNS zone
