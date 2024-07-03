@@ -28,7 +28,8 @@ terraform plan -out main.tfplan
 terraform apply main.tfplan
 ```
 
-- verify that the appropriate number of messages are in the queue via the portal
+- verify that the appropriate number of messages are in the queue via the [Azure portal](http://portal.azure.com/)
+
 
 ## bring up loaders:
 

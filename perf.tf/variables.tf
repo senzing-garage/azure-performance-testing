@@ -13,7 +13,8 @@ variable "senzingapi_tools_image" {
 variable "senzing_producer_image" {
   type        = string
   description = "Repo for the Senzing producer image"
-  default     = "docker.io/senzing/stream-producer:1.8.7"
+  default     = "public.ecr.aws/senzing/stream-producer:1.8.7"
+  # default     = "docker.io/senzing/stream-producer:1.8.7"
 }
 
 variable "senzing_loader_image" {
