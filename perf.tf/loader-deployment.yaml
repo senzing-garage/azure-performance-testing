@@ -39,6 +39,7 @@ data:
     echo 'export SENZING_DOCKER_LAUNCHED=true' >> ~/.bashrc
     echo 'export PYTHONUNBUFFERED=1' >> ~/.bashrc
     source ~/.bashrc
+    # while true; do echo grumble args $(date); sleep 600;done
     /app/sz_sb_consumer.py
   sz-run-redoer.sh: |
     #!/bin/bash

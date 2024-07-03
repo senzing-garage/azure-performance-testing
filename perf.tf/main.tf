@@ -29,14 +29,59 @@ resource "azurerm_subnet" "sz_subnet_1" {
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.sz_network.name
   address_prefixes     = ["10.240.0.0/16"]
+  service_endpoints    = ["Microsoft.SQL"]
+  # private_endpoint_network_policies_enabled = false
+  private_endpoint_network_policies = "Disabled"
 }
 
-resource "azurerm_subnet" "sz_subnet_2" {
-  name                 = "subnet-2"
-  resource_group_name  = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.sz_network.name
-  address_prefixes     = ["10.241.0.0/16"]
+resource "azurerm_network_security_group" "sz_nsg" {
+  name                = "sz-nsg"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  security_rule {
+    name                       = "inbound-allow-all"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+  security_rule {
+    name                       = "outbound-allow-all"
+    priority                   = 100
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
 }
+
+resource "azurerm_subnet_network_security_group_association" "sz_nsg_association" {
+  subnet_id                 = azurerm_subnet.sz_subnet_1.id
+  network_security_group_id = azurerm_network_security_group.sz_nsg.id
+}
+
+# resource "azurerm_subnet" "sz_subnet_2" {
+#   name                 = "subnet-2"
+#   resource_group_name  = azurerm_resource_group.rg.name
+#   virtual_network_name = azurerm_virtual_network.sz_network.name
+#   address_prefixes     = ["10.241.0.0/16"]
+# }
+
+# resource "azurerm_subnet" "sz_sql_subnet" {
+#   name                 = "sql-subnet"
+#   resource_group_name  = azurerm_resource_group.rg.name
+#   virtual_network_name = azurerm_virtual_network.sz_network.name
+#   address_prefixes     = ["10.7.29.0/29"]
+#   service_endpoints    = ["Microsoft.Sql"]
+# }
 
 # Public IP address for NAT gateway
 # resource "azurerm_public_ip" "sz_public_ip" {
@@ -147,10 +192,50 @@ resource "azurerm_mssql_server" "server" {
   location                     = azurerm_resource_group.rg.location
   administrator_login          = var.db_admin_username
   administrator_login_password = local.db_admin_password
+  connection_policy = "Redirect"
   version                      = "12.0"
   tags = {
     environment = "Production"
   }
+}
+
+resource "azurerm_mssql_virtual_network_rule" "sz_sql_vnet_rule" {
+  name      = "sql-vnet-rule"
+  server_id = azurerm_mssql_server.server.id
+  subnet_id = azurerm_subnet.sz_subnet_1.id
+  ignore_missing_vnet_service_endpoint = true
+}
+
+resource "azurerm_private_endpoint" "sz_private_endpoint" {
+  name                = "${random_pet.rg_name.id}-endpoint"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  subnet_id           = azurerm_subnet.sz_subnet_1.id
+
+  private_service_connection {
+    name                           = "${random_pet.rg_name.id}-privateserviceconnection"
+    private_connection_resource_id = azurerm_mssql_server.server.id
+    subresource_names              = [ "sqlServer" ]
+    is_manual_connection           = false
+  }
+  private_dns_zone_group {
+    name                 = "dns-zone-group"
+    private_dns_zone_ids = [azurerm_private_dns_zone.sz_dns_zone.id]
+  }
+}
+
+# Create private DNS zone
+resource "azurerm_private_dns_zone" "sz_dns_zone" {
+  name                = "privatelink.database.windows.net"
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+# Create virtual network link
+resource "azurerm_private_dns_zone_virtual_network_link" "sz_vnet_link" {
+  name                  = "vnet-link"
+  resource_group_name   = azurerm_resource_group.rg.name
+  private_dns_zone_name = azurerm_private_dns_zone.sz_dns_zone.name
+  virtual_network_id    = azurerm_virtual_network.sz_network.id
 }
 
 # SQL Database
@@ -164,7 +249,6 @@ resource "azurerm_mssql_database" "db" {
   # zone_redundant = true
   # enclave_type   = "VBS"
 }
-
 
 #### STORAGE FOR LOGGING
 
