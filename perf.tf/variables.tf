@@ -1,7 +1,7 @@
 variable "number_of_records" {
   type        = string
   description = "Number of records to put into the queue for processing"
-  default     = "2000000"
+  default     = "25000000"
 }
 
 variable "senzingapi_tools_image" {
@@ -33,7 +33,8 @@ variable "senzing_license_string" {
 variable "test_data_url" {
   type        = string
   description = "URL for the test data set."
-  default     = "https://public-read-access.s3.amazonaws.com/TestDataSets/test-dataset-100m.json.gz"
+  default     = "https://public-read-access.s3.amazonaws.com/TestDataSets/test-25m_with-updates_shuf.jsonl.gz"
+  # default     = "https://public-read-access.s3.amazonaws.com/TestDataSets/test-dataset-100m.json.gz"
 }
 
 variable "database_sku" {
