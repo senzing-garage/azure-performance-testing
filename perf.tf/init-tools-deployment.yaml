@@ -1,0 +1,175 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sz-script-configmap
+data:
+  sz-run-tools.sh: |
+    #!/bin/bash
+    apt-get update
+    apt-get -y install apt-transport-https wget
+    ACCEPT_EULA=Y apt-get -y install \
+      libaio1 libodbc1 libxml2 \
+      python3 python3-dev python3-pip python3-venv unixodbc
+    wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg
+    wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list
+    apt-get update
+    ACCEPT_EULA=Y apt-get -y install \
+      msodbcsql17 mssql-tools
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin:"' >> ~/.bashrc
+    echo 'export PATH="/app/venv/bin:$PATH:/opt/mssql-tools/bin:/opt/senzing/g2/python:/opt/IBM/db2/clidriver/adm:/opt/IBM/db2/clidriver/bin"' >> ~/.bashrc
+    echo 'export PYTHONPATH="$PYTHONPATH:/opt/senzing/g2/sdk/python:/app"' >> ~/.bashrc
+    echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/senzing/g2/lib:/opt/senzing/g2/lib/debian:/opt/IBM/db2/clidriver/lib"' >> ~/.bashrc
+    source ~/.bashrc
+    while true; do echo grumble args $(date); sleep 600;done
+  sz-run-init-database.sh: |
+    #!/bin/bash
+    apt-get update
+    apt-get -y install apt-transport-https wget
+    ACCEPT_EULA=Y apt-get -y install \
+      libaio1 libodbc1 libxml2 \
+      python3 python3-dev python3-pip python3-venv unixodbc
+    wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg
+    wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list
+    apt-get update
+    ACCEPT_EULA=Y apt-get -y install \
+      msodbcsql17 mssql-tools
+    echo 'export PATH="$PATH:/opt/mssql-tools/bin:"' >> ~/.bashrc
+    echo 'export PATH="/app/venv/bin:$PATH:/opt/mssql-tools/bin:/opt/senzing/g2/python:/opt/IBM/db2/clidriver/adm:/opt/IBM/db2/clidriver/bin"' >> ~/.bashrc
+    echo 'export PYTHONPATH="$PYTHONPATH:/opt/senzing/g2/sdk/python:/app"' >> ~/.bashrc
+    echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/senzing/g2/lib:/opt/senzing/g2/lib/debian:/opt/IBM/db2/clidriver/lib"' >> ~/.bashrc
+    source ~/.bashrc
+    export TOOLS_VERSION=$(apt policy senzingapi-tools|grep Installed |cut -d ":" -f 2| awk '{$1=$1};1')
+    apt-get -y install senzingapi-setup=$TOOLS_VERSION
+    sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -i /opt/senzing/g2/resources/schema/g2core-schema-mssql-create.sql -o /tmp/schema.out
+    echo "ALTER DATABASE G2 SET DELAYED_DURABILITY = Forced;" > /tmp/alterdb.sql
+    echo "ALTER DATABASE G2 SET AUTO_UPDATE_STATISTICS_ASYNC ON;" >> /tmp/alterdb.sql
+    echo "ALTER DATABASE G2 SET AUTO_CREATE_STATISTICS ON;" >> /tmp/alterdb.sql
+    echo "ALTER DATABASE SCOPED CONFIGURATION SET MAXDOP = 1;" >> /tmp/alterdb.sql
+    sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -i /tmp/alterdb.sql -o /tmp/alterdb.out
+    echo "addDataSource CUSTOMERS" > /tmp/add.sz
+    echo "addDataSource REFERENCE" >> /tmp/add.sz
+    echo "addDataSource WATCHLIST" >> /tmp/add.sz
+    echo "save" >> /tmp/add.sz
+    G2ConfigTool.py -f /tmp/add.sz
+    while true; do echo grumble args $(date); sleep 600;done
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sz-tools
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sz-tools
+  template:
+    metadata:
+      labels:
+        app: sz-tools
+      # securityContext:
+      #   privileged: true
+      # runAsUser: 1000
+      # runAsGroup: 1000
+      # fsGroup: 1000
+    spec:
+      volumes:
+        - name: sz-script-volume
+          configMap:
+            defaultMode: 0700
+            name: sz-script-configmap
+      containers:
+        - name: sz-tools
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: 0
+            capabilities:
+              add: ['SYS_PTRACE']
+          image: 'public.ecr.aws/senzing/senzingapi-tools:staging'
+          resources:
+            requests:
+              cpu: '2'
+              memory: '10Gi'
+            # limits:
+            #   cpu: 4.0
+            #   memory: 30Gi
+          env:
+            - name: 'AZURE_ANIMAL'
+              value: '${AZURE_ANIMAL}'
+            - name: 'LC_CTYPE'
+              value: 'en_US.utf8'
+            - name: 'SENZING_AZURE_QUEUE_CONNECTION_STRING'
+              value: '${SENZING_AZURE_QUEUE_CONNECTION_STRING}'
+            - name: 'SENZING_DB_PWD'
+              value: '${SENZING_DB_PWD}'
+            - name: 'SENZING_DEBUG'
+              value: 'False'
+            - name: 'SENZING_ENGINE_CONFIGURATION_JSON'
+              value: '${SENZING_ENGINE_CONFIGURATION_JSON}'
+            - name: 'SENZING_LOG_LEVEL'
+              value: 'info'
+            - name: 'SENZING_SUBCOMMAND'
+              value: 'mandatory'
+          command: ['/bin/bash', '-c']
+          args: ['/init/sz-run-tools.sh']
+          # args: ['while true; do echo grumble args $(date); sleep 600;done']
+          volumeMounts:
+            - name: sz-script-volume
+              mountPath: /init/
+              readOnly: true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sz-init-database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sz-init-database
+  template:
+    metadata:
+      labels:
+        app: sz-init-database
+    spec:
+      volumes:
+        - name: sz-script-volume
+          configMap:
+            defaultMode: 0700
+            name: sz-script-configmap
+      containers:
+        - name: sz-init-database
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: 0
+          image: 'public.ecr.aws/senzing/senzingapi-tools:staging'
+          resources:
+            requests:
+              cpu: '3.5'
+              memory: '30Gi'
+            # limits:
+            #   cpu: 4.0
+            #   memory: 30Gi
+          env:
+            - name: 'AZURE_ANIMAL'
+              value: '${AZURE_ANIMAL}'
+            - name: 'LC_CTYPE'
+              value: 'en_US.utf8'
+            - name: 'SENZING_AZURE_QUEUE_CONNECTION_STRING'
+              value: '${SENZING_AZURE_QUEUE_CONNECTION_STRING}'
+            - name: 'SENZING_AZURE_QUEUE_NAME'
+              value: '${SENZING_AZURE_QUEUE_NAME}'
+            - name: 'SENZING_DB_PWD'
+              value: '${SENZING_DB_PWD}'
+            - name: 'SENZING_DEBUG'
+              value: 'False'
+            - name: 'SENZING_ENGINE_CONFIGURATION_JSON'
+              value: '${SENZING_ENGINE_CONFIGURATION_JSON}'
+            - name: 'SENZING_SUBCOMMAND'
+              value: 'mandatory'
+          command: ['/bin/bash', '-c']
+          args: ['/init/sz-run-init-database.sh']
+          # args: ['while true; do echo grumble $(date); sleep 600;done']
+          volumeMounts:
+            - name: sz-script-volume
+              mountPath: /init/
+              readOnly: true
