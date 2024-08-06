@@ -28,17 +28,31 @@ terraform plan -out main.tfplan
 terraform apply main.tfplan
 ```
 
-- verify that the appropriate number of messages are in the queue via the portal
+- verify that the appropriate number of messages are in the queue via the [Azure portal](http://portal.azure.com/)
 
-## bring up loaders:
-
-### export the env vars from the terraform:
+## to destroy the stack when all done:
 
 ```
-terraform output -json | jq -r '@sh "export AZURE_ANIMAL=\(.AZURE_ANIMAL.value)\nexport SENZING_AZURE_QUEUE_CONNECTION_STRING=\(.SENZING_AZURE_QUEUE_CONNECTION_STRING.value)\nexport SENZING_AZURE_QUEUE_NAME=\(.SENZING_AZURE_QUEUE_NAME.value)\nexport SENZING_ENGINE_CONFIGURATION_JSON=\(.SENZING_ENGINE_CONFIGURATION_JSON.value| gsub("[ \\n\\t]"; ""))"' > env.sh
+terraform plan -destroy -out main.destroy.tfplan
+terraform apply main.destroy.tfplan
+```
+
+### bring up loaders:
+
+#### export the env vars from the terraform:
+
+```
+terraform output -json | jq -r '@sh "export AZURE_ANIMAL=\(.AZURE_ANIMAL.value)\nexport SENZING_AZURE_QUEUE_CONNECTION_STRING=\(.SENZING_AZURE_QUEUE_CONNECTION_STRING.value)\nexport SENZING_AZURE_QUEUE_NAME=\(.SENZING_AZURE_QUEUE_NAME.value)\nexport SENZING_DB_PWD=\(.db_admin_password.value)\nexport SENZING_ENGINE_CONFIGURATION_JSON=\(.SENZING_ENGINE_CONFIGURATION_JSON.value| gsub("[ \\n\\t]"; ""))"' > env.sh
 
 source env.sh
 ```
+
+#### initialize the database and bring up a tools container:
+
+```
+envsubst < init-tools-deployment.yaml | kubectl apply -f -
+```
+Use `kubectl exec --stdin --tty <tools pod id> -- /bin/bash` to run database queries from tools pod
 
 ### get AKS credentials:
 
@@ -57,7 +71,9 @@ envsubst < loader-deployment.yaml | kubectl apply -f -
 ### exec into tools:
 
 ```
-az containerapp exec --name $AZURE_ANIMAL-init-db-ca --resource-group $AZURE_ANIMAL-rg --command bash --container $AZURE_ANIMAL-senzingapi-tools
+kubectl exec --stdin --tty <tools pod id> -- /bin/bash
+
+#OLD: az containerapp exec --name $AZURE_ANIMAL-init-db-ca --resource-group $AZURE_ANIMAL-rg --command bash --container $AZURE_ANIMAL-senzingapi-tools
 ```
 
 ### inside of the tools container:
@@ -82,6 +98,25 @@ sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$
 ### Charts and graphs
 
 - TODO
+
+#### search logs for terms
+
+In the portal, kubernetes services -> monitoring -> logs
+
+Resource type -> kubernetes services -> "Find in ContainerLogV2"
+
+Query:
+
+```
+// Find In ContainerLogV2
+// Find in ContainerLogV2 to search for a specific value in the ContainerLogV2 table./nNote that this query requires updating the <SeachValue> parameter to produce results
+// This query requires a parameter to run. Enter value in SearchValue to find in table.
+let SearchValue =  "Processed";//Please update term you would like to find in the table.
+ContainerLogV2
+| where LogMessage contains tostring(SearchValue)
+| take 7000
+```
+
 
 ----------------------------------------
 
@@ -217,10 +252,12 @@ terraform apply main.tfplan
 #### export the env vars from the terraform:
 
 ```
-terraform output -json | jq -r '@sh "export AZURE_ANIMAL=\(.AZURE_ANIMAL.value)\nexport SENZING_AZURE_QUEUE_CONNECTION_STRING=\(.SENZING_AZURE_QUEUE_CONNECTION_STRING.value)\nexport SENZING_AZURE_QUEUE_NAME=\(.SENZING_AZURE_QUEUE_NAME.value)\nexport SENZING_ENGINE_CONFIGURATION_JSON=\(.SENZING_ENGINE_CONFIGURATION_JSON.value| gsub("[ \\n\\t]"; ""))"' > env.sh
+terraform output -json | jq -r '@sh "export AZURE_ANIMAL=\(.AZURE_ANIMAL.value)\nexport SENZING_AZURE_QUEUE_CONNECTION_STRING=\(.SENZING_AZURE_QUEUE_CONNECTION_STRING.value)\nexport SENZING_AZURE_QUEUE_NAME=\(.SENZING_AZURE_QUEUE_NAME.value)\nexport SENZING_DB_PWD=\(.db_admin_password.value)\nexport SENZING_ENGINE_CONFIGURATION_JSON=\(.SENZING_ENGINE_CONFIGURATION_JSON.value| gsub("[ \\n\\t]"; ""))"' > env.sh
 
 source env.sh
 ```
+
+envsubst < init-tools-deployment.yaml | kubectl apply -f -
 
 #### deploy loaders:
 
@@ -240,6 +277,24 @@ kubectl logs <pod_name>
 kubectl exec --stdin --tty <pod name> -- /bin/bash
 kubectl get deployment
 kubectl delete deployment <deployment name>
+```
+
+#### search logs for terms
+
+In the portal, kubernetes services -> monitoring -> logs
+
+Resource type -> kubernetes services -> "Find in ContainerLogV2"
+
+Query:
+
+```
+// Find In ContainerLogV2
+// Find in ContainerLogV2 to search for a specific value in the ContainerLogV2 table./nNote that this query requires updating the <SeachValue> parameter to produce results
+// This query requires a parameter to run. Enter value in SearchValue to find in table.
+let SearchValue =  "Processed";//Please update term you would like to find in the table.
+ContainerLogV2
+| where LogMessage contains tostring(SearchValue)
+| take 7000
 ```
 
 #### looking inside a consumer:

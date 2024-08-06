@@ -97,6 +97,8 @@ spec:
       containers:
         - name: sz-loader
           securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: 0
             capabilities:
               add: ['SYS_PTRACE']
           image: 'public.ecr.aws/senzing/senzingapi-runtime:staging'
@@ -202,6 +204,9 @@ spec:
             name: sz-script-configmap
       containers:
         - name: sz-redoer
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: 0
           image: 'public.ecr.aws/senzing/senzingapi-runtime:staging'
           resources:
             requests:

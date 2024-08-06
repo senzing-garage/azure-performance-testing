@@ -13,8 +13,11 @@ terraform {
 }
 
 provider "azurerm" {
-  features {}
-
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
   # subscription_id   = "${env.ARM_SUBSCRIPTION_ID}"
   # tenant_id         = "${env.ARM_TENANT_ID}"
   # client_id         = "${env.ARM_CLIENT_ID}"
