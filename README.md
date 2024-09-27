@@ -38,7 +38,7 @@ terraform plan -destroy -out main.destroy.tfplan
 terraform apply main.destroy.tfplan
 ```
 
-### bring up loaders:
+### initialize database and bring up loaders:
 
 #### export the env vars from the terraform:
 
@@ -48,6 +48,12 @@ terraform output -json | jq -r '@sh "export AZURE_ANIMAL=\(.AZURE_ANIMAL.value)\
 source env.sh
 ```
 
+### get AKS credentials:
+
+```
+az aks get-credentials --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-cluster
+```
+
 #### initialize the database and bring up a tools container:
 
 ```
@@ -55,20 +61,12 @@ envsubst < init-tools-deployment.yaml | kubectl apply -f -
 ```
 Use `kubectl exec --stdin --tty <tools pod id> -- /bin/bash` to run database queries from tools pod
 
-### get AKS credentials:
-
-```
-az aks get-credentials --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-cluster
-```
-
 ### deploy loaders:
 
 ```
 envsubst < loader-deployment.yaml | kubectl apply -f -
 ```
 
-<<<<<<< Updated upstream
-=======
 ## Monitor progress:
 
 ### check producer logs:
@@ -100,6 +98,7 @@ kubectl logs -f <pod_name>
 kubectl exec --stdin --tty <pod name> -- /bin/bash
 kubectl get deployment
 kubectl delete deployment <deployment name>
+kubectl delete configmap <configmap name>
 ```
 
 ### check service bus queue:
@@ -111,7 +110,6 @@ az servicebus queue show --resource-group $AZURE_ANIMAL-rg \
     --query countDetails
 ```
 
->>>>>>> Stashed changes
 ## Gather stats:
 
 ### exec into tools:
@@ -268,6 +266,16 @@ $ export ARM_TENANT_ID="<tenantId>"
 # check expiration of login
 az account get-access-token
 ```
+
+### look at service bus:
+
+```
+az servicebus queue show --resource-group $AZURE_ANIMAL-rg \
+    --namespace-name $AZURE_ANIMAL-service-bus \
+    --name $AZURE_ANIMAL-queue \
+    --query countDetails
+```
+
 ## AKS
 
 Ref:
@@ -332,6 +340,7 @@ envsubst < loader-deployment.yaml | kubectl apply -f -
 kubectl get pods --watch
 kubectl get pod <pod name>
 kubectl logs <pod_name>
+kubectl logs -f <pod_name>
 kubectl exec --stdin --tty <pod name> -- /bin/bash
 kubectl get deployment
 kubectl delete deployment <deployment name>
