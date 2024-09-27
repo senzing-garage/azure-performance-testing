@@ -68,8 +68,8 @@ variable "use_mstools_init_command" {
       wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg
       wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list
       apt-get update
-      ACCEPT_EULA=Y apt-get -y install msodbcsql17 mssql-tools
-      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+      ACCEPT_EULA=Y apt-get -y install msodbcsql18 mssql-tools18
+      echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
       source ~/.bashrc
       while true; do echo grumble $(date); sleep 600;done
   EOT
@@ -82,8 +82,8 @@ variable "db_init_command" {
       wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg
       wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list
       apt-get update
-      ACCEPT_EULA=Y apt-get -y install msodbcsql17 mssql-tools
-      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+      ACCEPT_EULA=Y apt-get -y install msodbcsql18 mssql-tools18
+      echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
       source ~/.bashrc
       export TOOLS_VERSION=$(apt policy senzingapi-tools|grep Installed |cut -d ":" -f 2| awk '{$1=$1};1')
       apt-get -y install senzingapi-setup=$TOOLS_VERSION
@@ -105,7 +105,7 @@ variable "init_loader_command" {
       apt-get update
       ACCEPT_EULA=Y apt-get -y install \
         libaio1 libodbc1 libxml2 \
-        msodbcsql17 mssql-tools \
+        msodbcsql18 mssql-tools18 \
         python3 python3-dev python3-pip python3-venv unixodbc
       python3 -m venv /app/venv
       export PATH="/app/venv/bin:$PATH"
@@ -121,7 +121,7 @@ variable "init_loader_command" {
       chmod +x /app/healthcheck.sh
       chmod +x /app/stream-loader.py
       echo 'export VIRTUAL_ENV=/app/venv' >> ~/.bashrc
-      echo 'export PATH="/app/venv/bin:$PATH:/opt/mssql-tools/bin:/opt/senzing/g2/python:/opt/IBM/db2/clidriver/adm:/opt/IBM/db2/clidriver/bin"' >> ~/.bashrc
+      echo 'export PATH="/app/venv/bin:$PATH:/opt/mssql-tools18/bin:/opt/senzing/g2/python:/opt/IBM/db2/clidriver/adm:/opt/IBM/db2/clidriver/bin"' >> ~/.bashrc
       echo 'export PYTHONPATH="$PYTHONPATH:/opt/senzing/g2/sdk/python:/app"' >> ~/.bashrc
       echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/senzing/g2/lib:/opt/senzing/g2/lib/debian:/opt/IBM/db2/clidriver/lib"' >> ~/.bashrc
       echo 'export SENZING_DOCKER_LAUNCHED=true' >> ~/.bashrc
@@ -159,8 +159,8 @@ variable "init_sz_consumer_command" {
       mkdir /app
       wget -qO - https://raw.githubusercontent.com/brianmacy/sz_sqs_consumer/main/sz_sqs_consumer.py > /app/sz_sqs_consumer.py
       wget -qO - https://raw.githubusercontent.com/Senzing/governor-postgresql-transaction-id/main/senzing_governor.py > /app/senzing_governor.py
-      ACCEPT_EULA=Y apt-get -y install msodbcsql17 mssql-tools
-      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+      ACCEPT_EULA=Y apt-get -y install msodbcsql18 mssql-tools18
+      echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
       echo 'export PYTHONPATH="$PYTHONPATH:/opt/senzing/g2/sdk/python:/app"' >> ~/.bashrc
       source ~/.bashrc
       while true; do echo grumble $(date); sleep 600;done

@@ -242,7 +242,8 @@ resource "azurerm_private_dns_zone_virtual_network_link" "sz_vnet_link" {
 resource "azurerm_mssql_database" "db" {
   name      = var.sql_db_name
   server_id = azurerm_mssql_server.server.id
-  collation = "Latin1_General_100_CS_AI_SC_UTF8"
+  # collation = "Latin1_General_100_CS_AI_SC_UTF8"
+  collation = "SQL_Latin1_General_CP1_CI_AS"
   # max_size_gb    = 4
   # read_scale     = true
   sku_name = var.database_sku

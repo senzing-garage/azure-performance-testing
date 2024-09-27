@@ -42,8 +42,8 @@ variable "database_sku" {
   description = "SKU for the database to use"
   # default     = "S0"
   # default = "S3"
-  # default = "HS_Gen5_16"
-  default = "HS_Gen5_32"
+  default = "HS_Gen5_16"
+  # default = "HS_Gen5_32"
 }
 # ref: https://learn.microsoft.com/en-us/azure/azure-sql/database/resource-limits-vcore-single-databases?view=azuresql
 
@@ -106,8 +106,8 @@ variable "use_mstools_init_command" {
       wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg
       wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list
       apt-get update
-      ACCEPT_EULA=Y apt-get -y install msodbcsql17 mssql-tools
-      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+      ACCEPT_EULA=Y apt-get -y install msodbcsql18 mssql-tools18
+      echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
       source ~/.bashrc
       while true; do echo grumble $(date); sleep 600;done
   EOT
@@ -120,8 +120,8 @@ variable "db_init_command" {
       wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg
       wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list
       apt-get update
-      ACCEPT_EULA=Y apt-get -y install msodbcsql17 mssql-tools
-      echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+      ACCEPT_EULA=Y apt-get -y install msodbcsql18 mssql-tools18
+      echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
       source ~/.bashrc
       export TOOLS_VERSION=$(apt policy senzingapi-tools|grep Installed |cut -d ":" -f 2| awk '{$1=$1};1')
       apt-get -y install senzingapi-setup=$TOOLS_VERSION
