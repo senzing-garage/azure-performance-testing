@@ -17,6 +17,7 @@
 
 ### for az env (once for the shell):
 
+- login to Azure portal: https://portal.azure.com/#home
 - [set up Azure CLI](#Azure-CLI)
 
 ## bring up the stack:
@@ -37,7 +38,7 @@ terraform plan -destroy -out main.destroy.tfplan
 terraform apply main.destroy.tfplan
 ```
 
-### bring up loaders:
+### initialize database and bring up loaders:
 
 #### export the env vars from the terraform:
 
@@ -47,6 +48,12 @@ terraform output -json | jq -r '@sh "export AZURE_ANIMAL=\(.AZURE_ANIMAL.value)\
 source env.sh
 ```
 
+### get AKS credentials:
+
+```
+az aks get-credentials --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-cluster
+```
+
 #### initialize the database and bring up a tools container:
 
 ```
@@ -54,16 +61,53 @@ envsubst < init-tools-deployment.yaml | kubectl apply -f -
 ```
 Use `kubectl exec --stdin --tty <tools pod id> -- /bin/bash` to run database queries from tools pod
 
-### get AKS credentials:
-
-```
-az aks get-credentials --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-cluster
-```
-
 ### deploy loaders:
 
 ```
 envsubst < loader-deployment.yaml | kubectl apply -f -
+```
+
+## Monitor progress:
+
+### check producer logs:
+
+- name is `$AZURE_ANIMAL-continst-0` or `$AZURE_ANIMAL-continst-1`
+- container for
+  - `$AZURE_ANIMAL-continst-0`
+    - `$AZURE_ANIMAL-senzing-producer-0`
+    - `$AZURE_ANIMAL-senzing-producer-1`
+    - `$AZURE_ANIMAL-senzing-producer-2`
+    - `$AZURE_ANIMAL-senzing-producer-3`
+  - `$AZURE_ANIMAL-continst-1`
+    - `$AZURE_ANIMAL-senzing-producer-10`
+    - `$AZURE_ANIMAL-senzing-producer-11`
+    - `$AZURE_ANIMAL-senzing-producer-12`
+    - `$AZURE_ANIMAL-senzing-producer-13`
+
+```
+az container logs --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-continst-1 --container $AZURE_ANIMAL-senzing-producer-11
+```
+
+### check loader pods, deplyents, and logs:
+
+```
+kubectl get pods --watch
+kubectl get pod <pod name>
+kubectl logs <pod_name>
+kubectl logs -f <pod_name>
+kubectl exec --stdin --tty <pod name> -- /bin/bash
+kubectl get deployment
+kubectl delete deployment <deployment name>
+kubectl delete configmap <configmap name>
+```
+
+### check service bus queue:
+
+```
+az servicebus queue show --resource-group $AZURE_ANIMAL-rg \
+    --namespace-name $AZURE_ANIMAL-service-bus \
+    --name $AZURE_ANIMAL-queue \
+    --query countDetails
 ```
 
 ## Gather stats:
@@ -86,7 +130,6 @@ sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT GETDATE(), COUNT(*) FROM SYS_EVAL_QUEUE;"
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "SELECT GETDATE(), COUNT(*) FROM RES_RELATE;"
 
-
 # query that is close to what the AWS query gives us
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select min(first_seen_dt) load_start, count(*)/(DATEDIFF_BIG(SECOND, min(first_seen_dt), max(first_seen_dt))/60) erpm, count(*) total, max(first_seen_dt)-min(first_seen_dt) duration, count(*)/DATEDIFF_BIG(SECOND, min(first_seen_dt), max(first_seen_dt)) avg_erps from dsrc_record;"
 
@@ -94,6 +137,19 @@ sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select dr.RECORD_ID,oe.OBS_ENT_ID,reo.RES_ENT_ID from DSRC_RECORD dr left outer join OBS_ENT oe ON dr.dsrc_id = oe.dsrc_id and dr.ent_src_key = oe.ent_src_key left outer join RES_ENT_OKEY reo ON oe.OBS_ENT_ID = reo.OBS_ENT_ID where reo.RES_ENT_ID is null;"
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select dr.RECORD_ID,reo.OBS_ENT_ID,reo.RES_ENT_ID from RES_ENT_OKEY reo left outer join OBS_ENT oe ON oe.OBS_ENT_ID = reo.OBS_ENT_ID  left outer join DSRC_RECORD dr  ON dr.dsrc_id = oe.dsrc_id and dr.ent_src_key = oe.ent_src_key where dr.RECORD_ID is null;"
 ```
+
+##### get Azure SQL version
+
+```
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select @@version as version;"
+
+##### attempt to repro issue:
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "DBCC FREEPROCCACHE WITH NO_INFOMSGS;"
+
+sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "ALTER DATABASE SCOPED CONFIGURATION CLEAR PROCEDURE_CACHE"
+g2cmd:  searchByAttributes '{"NAME_FIRST": "RRUTH","NAME_LAST": "HAVEN","ADDR_CITY": "Holtwood","ADDR_LINE1": "206 BethesdaChurch ROAD","ADDR_POSTAL_CODE": "17532"}'
+```
+
 
 ### Charts and graphs
 
@@ -210,6 +266,16 @@ $ export ARM_TENANT_ID="<tenantId>"
 # check expiration of login
 az account get-access-token
 ```
+
+### look at service bus:
+
+```
+az servicebus queue show --resource-group $AZURE_ANIMAL-rg \
+    --namespace-name $AZURE_ANIMAL-service-bus \
+    --name $AZURE_ANIMAL-queue \
+    --query countDetails
+```
+
 ## AKS
 
 Ref:
@@ -274,6 +340,7 @@ envsubst < loader-deployment.yaml | kubectl apply -f -
 kubectl get pods --watch
 kubectl get pod <pod name>
 kubectl logs <pod_name>
+kubectl logs -f <pod_name>
 kubectl exec --stdin --tty <pod name> -- /bin/bash
 kubectl get deployment
 kubectl delete deployment <deployment name>
@@ -849,9 +916,9 @@ Assumes that two environment vars are set in the container:
 wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg \
 && wget -qO - https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list \
 && apt-get update \
-&& ACCEPT_EULA=Y apt-get -y install msodbcsql17 \
-&& ACCEPT_EULA=Y apt-get -y install mssql-tools
-echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+&& ACCEPT_EULA=Y apt-get -y install msodbcsql18 \
+&& ACCEPT_EULA=Y apt-get -y install mssql-tools18
+echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
 source ~/.bashrc
 
 # Senzing database initialization
