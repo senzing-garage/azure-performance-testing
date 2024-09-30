@@ -22,6 +22,7 @@ data:
     apt-get update
     ACCEPT_EULA=Y apt-get -y install \
       msodbcsql18 mssql-tools18
+      msodbcsql18 mssql-tools18
     python3 -m venv /app/venv
     export PATH="/app/venv/bin:$PATH"
     wget -qO - https://raw.githubusercontent.com/roncewind/sz_sb_consumer/main/requirement.txt  > /app/requirements.txt
@@ -31,8 +32,10 @@ data:
     pip3 install orjson
     pip3 install azure-servicebus
     wget -qO - https://raw.githubusercontent.com/roncewind/sz_sb_consumer/main/sz_sb_consumer.py > /app/sz_sb_consumer.py
+    wget -qO - https://raw.githubusercontent.com/roncewind/sz_sb_consumer/main/sz_sb_consumer.py > /app/sz_sb_consumer.py
     chmod +x /app/sz_sb_consumer.py
     echo 'export VIRTUAL_ENV=/app/venv' >> ~/.bashrc
+    echo 'export PATH="/app/venv/bin:$PATH:/opt/mssql-tools18/bin:/opt/senzing/g2/python:/opt/IBM/db2/clidriver/adm:/opt/IBM/db2/clidriver/bin"' >> ~/.bashrc
     echo 'export PATH="/app/venv/bin:$PATH:/opt/mssql-tools18/bin:/opt/senzing/g2/python:/opt/IBM/db2/clidriver/adm:/opt/IBM/db2/clidriver/bin"' >> ~/.bashrc
     echo 'export PYTHONPATH="$PYTHONPATH:/opt/senzing/g2/sdk/python:/app"' >> ~/.bashrc
     echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/senzing/g2/lib:/opt/senzing/g2/lib/debian:/opt/IBM/db2/clidriver/lib"' >> ~/.bashrc
@@ -52,6 +55,7 @@ data:
     apt-get update
     ACCEPT_EULA=Y apt-get -y install \
       msodbcsql18 mssql-tools18
+      msodbcsql18 mssql-tools18
     python3 -m venv /app/venv
     export PATH="/app/venv/bin:$PATH"
     cd /app
@@ -62,6 +66,7 @@ data:
     wget -qO - https://raw.githubusercontent.com/brianmacy/sz_simple_redoer/mssql/sz_simple_redoer.py > /app/sz_simple_redoer.py
     chmod +x /app/sz_simple_redoer.py
     echo 'export VIRTUAL_ENV=/app/venv' >> ~/.bashrc
+    echo 'export PATH="/app/venv/bin:$PATH:/opt/mssql-tools18/bin:/opt/senzing/g2/python:/opt/IBM/db2/clidriver/adm:/opt/IBM/db2/clidriver/bin"' >> ~/.bashrc
     echo 'export PATH="/app/venv/bin:$PATH:/opt/mssql-tools18/bin:/opt/senzing/g2/python:/opt/IBM/db2/clidriver/adm:/opt/IBM/db2/clidriver/bin"' >> ~/.bashrc
     echo 'export PYTHONPATH="$PYTHONPATH:/opt/senzing/g2/sdk/python:/app"' >> ~/.bashrc
     echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/senzing/g2/lib:/opt/senzing/g2/lib/debian:/opt/IBM/db2/clidriver/lib"' >> ~/.bashrc
@@ -75,11 +80,7 @@ kind: Deployment
 metadata:
   name: sz-loader
 spec:
-<<<<<<< Updated upstream
-  replicas: 8
-=======
   replicas: 1
->>>>>>> Stashed changes
   selector:
     matchLabels:
       app: sz-loader
@@ -142,6 +143,7 @@ spec:
               value: 'azure-queue'
             - name: 'SENZING_THREADS_PER_PROCESS'
               value: '20'
+              value: '20'
           command: ['/bin/bash', '-c']
           args: ['/init/sz-run-loader.sh']
           # args: ['while true; do echo grumble args $(date); sleep 600;done']
@@ -160,11 +162,7 @@ spec:
     kind: Deployment
     name: sz-loader
   minReplicas: 1
-<<<<<<< Updated upstream
-  maxReplicas: 350
-=======
   maxReplicas: 1
->>>>>>> Stashed changes
   metrics:
     - type: Resource
       resource:

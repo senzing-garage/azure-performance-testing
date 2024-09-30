@@ -192,7 +192,7 @@ resource "azurerm_mssql_server" "server" {
   location                     = azurerm_resource_group.rg.location
   administrator_login          = var.db_admin_username
   administrator_login_password = local.db_admin_password
-  connection_policy = "Redirect"
+  connection_policy            = "Redirect"
   version                      = "12.0"
   tags = {
     environment = "Production"
@@ -200,9 +200,9 @@ resource "azurerm_mssql_server" "server" {
 }
 
 resource "azurerm_mssql_virtual_network_rule" "sz_sql_vnet_rule" {
-  name      = "sql-vnet-rule"
-  server_id = azurerm_mssql_server.server.id
-  subnet_id = azurerm_subnet.sz_subnet_1.id
+  name                                 = "sql-vnet-rule"
+  server_id                            = azurerm_mssql_server.server.id
+  subnet_id                            = azurerm_subnet.sz_subnet_1.id
   ignore_missing_vnet_service_endpoint = true
 }
 
@@ -215,7 +215,7 @@ resource "azurerm_private_endpoint" "sz_private_endpoint" {
   private_service_connection {
     name                           = "${random_pet.rg_name.id}-privateserviceconnection"
     private_connection_resource_id = azurerm_mssql_server.server.id
-    subresource_names              = [ "sqlServer" ]
+    subresource_names              = ["sqlServer"]
     is_manual_connection           = false
   }
   private_dns_zone_group {
@@ -242,8 +242,8 @@ resource "azurerm_private_dns_zone_virtual_network_link" "sz_vnet_link" {
 resource "azurerm_mssql_database" "db" {
   name      = var.sql_db_name
   server_id = azurerm_mssql_server.server.id
-  collation = "Latin1_General_100_CS_AI_SC_UTF8"
-  # collation = "SQL_Latin1_General_CP1_CI_AS"
+  # collation = "Latin1_General_100_CS_AI_SC_UTF8"
+  collation = "SQL_Latin1_General_CP1_CI_AS"
   # max_size_gb    = 4
   # read_scale     = true
   sku_name = var.database_sku
