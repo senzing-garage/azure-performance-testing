@@ -61,6 +61,14 @@ envsubst < init-tools-deployment.yaml | kubectl apply -f -
 ```
 Use `kubectl exec --stdin --tty <tools pod id> -- /bin/bash` to run database queries from tools pod
 
+to delete:
+
+```
+kubectl delete deployment sz-init-database
+kubectl delete deployment sz-tools
+kubectl delete configmap sz-script-configmap
+```
+
 ### deploy loaders:
 
 ```
