@@ -18,7 +18,9 @@
 ### for az env (once for the shell):
 
 - login to Azure portal: https://portal.azure.com/#home
-- [set up Azure CLI](#Azure-CLI)
+- `az login`
+
+If needed: [set up Azure CLI](#Azure-CLI)
 
 ## bring up the stack:
 
