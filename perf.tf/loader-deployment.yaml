@@ -75,7 +75,7 @@ kind: Deployment
 metadata:
   name: sz-loader
 spec:
-  replicas: 1
+  replicas: 8
   selector:
     matchLabels:
       app: sz-loader
@@ -157,7 +157,7 @@ spec:
     kind: Deployment
     name: sz-loader
   minReplicas: 1
-  maxReplicas: 1
+  maxReplicas: 50
   metrics:
     - type: Resource
       resource:
