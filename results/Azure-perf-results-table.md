@@ -1,5 +1,25 @@
 
 
+20241021
+====================================================================================
+Platform:                       |       AWS      |     Azure      |     Azure      |
+Build:                          |  3.12.1.24295  |  3.12.1-24281  |  3.12.1-24295  |
+Number of records:              |    25 M        |    25 M        |    25 M        |
+Number of records loaded:       | 21645223       | 21622221       | 21622221       |
+Peak:                           |  2049          |    --          |    --          |
+Warm-up:                        |    15 mins     |    -- mins     |    -- mins     |
+Average after warm-up:          |  1690          |    --          |    --          |
+Average over entire run:        |  1612          |   324          |   336          |
+Time to load 20M:               |     3.73 hours |    18.52 hours |    17.87 hours |
+Records in dead-letter queue:   |     0          |     0          |     0          |
+Total Billed read IOPS:         |      574,897   |    --          |    --          |
+Total Billed write IOPS:        |   99,307,108   |    --          |    --          |
+Max loader tasks:               |     36         |     50         |     50         |
+Max redoer tasks:               |     37         |     --         |     11         |
+Notes:                          | single DB inst | single DB inst | single DB inst |
+                                |   serverless   |  provisioned   |  provisioned   |
+====================================================================================
+
 20241007
 =====================================================================================================
 Platform:                       |       AWS      |     Azure      |       AWS      |     Azure      |
