@@ -1,5 +1,20 @@
 
 
+20241120
+===================================================================
+Platform:                       |     Azure      |     Azure      |
+Build:                          |  3.12.1-24295  |  3.12.3.24323  |
+Number of records:              |    25 M        |    25 M        |
+Number of records loaded:       | 21622221       | 21622221       |
+Average over entire run:        |   336          |   312          |
+Time to load 20M:               |    17.87 hours |    19.22 hours |
+Records in dead-letter queue:   |     0          |     0          |
+Max loader tasks:               |     50 (max)   |     50 (max)   |
+Max redoer tasks:               |     11         |     --         |
+Notes:                          | single DB inst | single DB inst |
+                                |  provisioned   |  provisioned   |
+===================================================================
+
 20241021
 ====================================================================================
 Platform:                       |       AWS      |     Azure      |     Azure      |
