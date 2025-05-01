@@ -1,5 +1,4 @@
 .DS_Store
-.history
 
 # Local .terraform directories
 **/.terraform/*
@@ -42,3 +41,9 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+# Visual Studio code
+.vscode/*
+!.vscode/cspell.json
+*.code-workspace
+.history

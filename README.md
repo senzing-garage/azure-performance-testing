@@ -61,6 +61,7 @@ az aks get-credentials --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-cl
 ```
 envsubst < init-tools-deployment.yaml | kubectl apply -f -
 ```
+
 Use `kubectl exec --stdin --tty <tools pod id> -- /bin/bash` to run database queries from tools pod
 
 to delete:
@@ -98,7 +99,7 @@ envsubst < loader-deployment.yaml | kubectl apply -f -
 az container logs --resource-group $AZURE_ANIMAL-rg --name $AZURE_ANIMAL-continst-1 --container $AZURE_ANIMAL-senzing-producer-11
 ```
 
-### check loader pods, deplyents, and logs:
+### check loader pods, deployments, and logs:
 
 ```
 kubectl get pods --watch
@@ -160,7 +161,6 @@ sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$
 g2cmd:  searchByAttributes '{"NAME_FIRST": "RRUTH","NAME_LAST": "HAVEN","ADDR_CITY": "Holtwood","ADDR_LINE1": "206 BethesdaChurch ROAD","ADDR_POSTAL_CODE": "17532"}'
 ```
 
-
 ### Charts and graphs
 
 - TODO
@@ -175,7 +175,7 @@ Query:
 
 ```
 // Find In ContainerLogV2
-// Find in ContainerLogV2 to search for a specific value in the ContainerLogV2 table./nNote that this query requires updating the <SeachValue> parameter to produce results
+// Find in ContainerLogV2 to search for a specific value in the ContainerLogV2 table./nNote that this query requires updating the <SearchValue> parameter to produce results
 // This query requires a parameter to run. Enter value in SearchValue to find in table.
 let SearchValue =  "Processed";//Please update term you would like to find in the table.
 ContainerLogV2
@@ -183,8 +183,7 @@ ContainerLogV2
 | take 7000
 ```
 
-
-----------------------------------------
+---
 
 # Research notes:
 
@@ -215,8 +214,8 @@ ContainerLogV2
 
 - https://learn.microsoft.com/en-us/azure/aks/reduce-latency-ppg
 
+---
 
--------------------------------------------------------------------------------
 # NOTES:
 
 ## Infrastructure automation tools
@@ -227,8 +226,8 @@ ContainerLogV2
 - Terraform: https://learn.microsoft.com/en-us/azure/developer/terraform/
 - ARM Templates: JSON based, easier to use Bicep which "compiles" down to this.
 - Docker compose:
-    - https://learn.microsoft.com/en-us/azure/container-instances/tutorial-docker-compose
-    - https://docs.docker.com/compose/compose-file/05-services/#scale
+  - https://learn.microsoft.com/en-us/azure/container-instances/tutorial-docker-compose
+  - https://docs.docker.com/compose/compose-file/05-services/#scale
 
 ## Azure CLI
 
@@ -291,7 +290,7 @@ az servicebus queue show --resource-group $AZURE_ANIMAL-rg \
 Ref:
 
 - vm_size: https://learn.microsoft.com/en-us/azure/virtual-machines/sizes
-   - defined in aks-cluster.tf.
+  - defined in aks-cluster.tf.
 
 List AKS clusters:
 
@@ -312,7 +311,6 @@ kubectl get nodes
 ```
 
 #if export isn't done: `kubectl get nodes --kubeconfig kubeconfig
-
 
 ### bring up the stack:
 
@@ -343,7 +341,6 @@ envsubst < loader-deployment.yaml | kubectl apply -f -
 # kubectl apply -f loader-deployment.yaml
 ```
 
-
 #### other commands:
 
 ```
@@ -366,7 +363,7 @@ Query:
 
 ```
 // Find In ContainerLogV2
-// Find in ContainerLogV2 to search for a specific value in the ContainerLogV2 table./nNote that this query requires updating the <SeachValue> parameter to produce results
+// Find in ContainerLogV2 to search for a specific value in the ContainerLogV2 table./nNote that this query requires updating the <SearchValue> parameter to produce results
 // This query requires a parameter to run. Enter value in SearchValue to find in table.
 let SearchValue =  "Processed";//Please update term you would like to find in the table.
 ContainerLogV2
@@ -401,10 +398,10 @@ awk '{print $2}' summary.out | sort | uniq -c | sort -n
 ```
 
 #### ref:
+
 - https://spacelift.io/blog/kubectl-delete-deployment
 - https://spacelift.io/blog/kubectl-delete-pod
 - https://spacelift.io/blog/kubectl-logs
-
 
 ### See logs of a container app:
 
@@ -425,12 +422,10 @@ az containerapp exec --name $AZURE_ANIMAL-init-db-ca --resource-group $AZURE_ANI
 az containerapp exec --name $AZURE_ANIMAL-init-db-ca --resource-group $AZURE_ANIMAL-rg --command bash --container $AZURE_ANIMAL-init-database
 ```
 
-
 ### Database
 
 - az database commands: https://learn.microsoft.com/en-us/cli/azure/sql/db?view=azure-cli-latest
 - SKUs: https://learn.microsoft.com/en-us/dotnet/api/azure.resourcemanager.sql.sqldatabasedata.sku?view=azure-dotnet
-
 
 #### get the database config [default database config](#default-database-config)
 
@@ -493,8 +488,6 @@ sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select dr.RECORD_ID,oe.OBS_ENT_ID,reo.RES_ENT_ID from DSRC_RECORD dr left outer join OBS_ENT oe ON dr.dsrc_id = oe.dsrc_id and dr.ent_src_key = oe.ent_src_key left outer join RES_ENT_OKEY reo ON oe.OBS_ENT_ID = reo.OBS_ENT_ID where reo.RES_ENT_ID is null;"
 sqlcmd -S $AZURE_ANIMAL-mssql-server.database.windows.net -d G2 -U senzing -P "$SENZING_DB_PWD" -I  -Q "select dr.RECORD_ID,reo.OBS_ENT_ID,reo.RES_ENT_ID from RES_ENT_OKEY reo left outer join OBS_ENT oe ON oe.OBS_ENT_ID = reo.OBS_ENT_ID  left outer join DSRC_RECORD dr  ON dr.dsrc_id = oe.dsrc_id and dr.ent_src_key = oe.ent_src_key where dr.RECORD_ID is null;"
 ```
-
-
 
 ```
 isql "DRIVER={ODBC Driver 17 for SQL Server}; SERVER=$AZURE_ANIMAL-mssql-server.database.windows.net; DATABASE=G2; PORT=1433; UID=senzing; PWD=$SENZING_DB_PWD" -v
@@ -574,21 +567,19 @@ sub-command for stream producer: gzipped-json-to-azure-queue
 
 terraform import azurerm_servicebus_namespace.example /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/mygroup1/providers/Microsoft.ServiceBus/namespaces/sbns1
 
-
 Host name: sz-welcome-turtle-service-bus.servicebus.windows.net
 "serviceBusEndpoint": "https://sz-welcome-turtle-service-bus.servicebus.windows.net:443/",
 "id": "/subscriptions/5415bf99-6956-43fd-a8a9-434c958ca13c/resourceGroups/sz-welcome-turtle-rg/providers/Microsoft.ServiceBus/namespaces/sz-welcome-turtle-service-bus",
-
 
 ## References:
 
 - terraform on azure: https://learn.microsoft.com/en-us/azure/developer/terraform/
 - resource group creation: https://learn.microsoft.com/en-us/azure/developer/terraform/create-resource-group?tabs=azure-cli
-    - left panel lists other resources and howtos of interest
+  - left panel lists other resources and how tos of interest
 
 #### environment variables:
 
-Terraform can directly access environment variables that are named using the pattern TF_VAR_, for example TF_VAR_foo=bar will provide the value bar to the variable declared using variable "foo" {}
+Terraform can directly access environment variables that are named using the pattern TF*VAR*, for example TF_VAR_foo=bar will provide the value bar to the variable declared using variable "foo" {}
 
 Ref. https://support.hashicorp.com/hc/en-us/articles/4547786359571-Reading-and-using-environment-variables-in-Terraform-runs
 
@@ -620,8 +611,7 @@ sqlcmd -Ssenzing-sql-server.database.windows.net -dG2 -Usenzing
 
 Note: must always use "go" to execute the sql command. Use "exit" to quit sqlcmd.
 
-
-----------------------------------------
+---
 
 #### default database config
 
@@ -908,17 +898,14 @@ HS_MOPRMS_80        HS_MOPRMS      Hyperscale        8IH       80          VCore
 HS_PRMS_128         HS_PRMS        Hyperscale        8IM       128         VCores  True
 ```
 
-
-
-
-
 ## set up Senzing container:
 
 - REF: https://learn.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-ver16&tabs=debian18-install%2Cdebian17-install%2Cdebian8-install%2Credhat7-13-install%2Crhel7-offline
 
 Assumes that two environment vars are set in the container:
+
 - AZURE_ANIMAL = sz-random-animal # used to name all azure resources uniquely, including the database
-- SENZING_DB_PWD = un-encoded database password.  used for the `sqlcmd` command
+- SENZING_DB_PWD = un-encoded database password. used for the `sqlcmd` command
 
 ```
 # install MS drivers and tools (tools are only needed IF initializing the database)
@@ -955,7 +942,6 @@ echo "save" >> /tmp/add.sz
 G2ConfigTool.py -f /tmp/add.sz
 ```
 
-
 ```
 {
             "PIPELINE": {
@@ -972,4 +958,3 @@ G2ConfigTool.py -f /tmp/add.sz
 
 export SENZING_ENGINE_CONFIGURATION_JSON='{"PIPELINE": {"CONFIGPATH": "/etc/opt/senzing","LICENSESTRINGBASE64": "{license_string}","RESOURCEPATH": "/opt/senzing/g2/resources","SUPPORTPATH": "/opt/senzing/data"},"SQL": {"BACKEND": "SQL","CONNECTION" : "mssql://senzing:fsiPYFJ5Ee%7BDZm%3Fz%29%7B_h@sz-social-kit-mssql-server.database.windows.net:1433:G2"} }'
 ```
-
