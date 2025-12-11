@@ -47,3 +47,7 @@ terraform.rc
 !.vscode/cspell.json
 *.code-workspace
 .history
+
+# Claude
+.claude/*
+CLAUDE.md

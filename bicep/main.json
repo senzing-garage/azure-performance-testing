@@ -1,0 +1,3305 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.39.26.7824",
+      "templateHash": "3450240817769835507"
+    }
+  },
+  "parameters": {
+    "senzingLicenseBase64": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Base64-encoded Senzing license string"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources"
+      }
+    },
+    "baseName": {
+      "type": "string",
+      "defaultValue": "senzing",
+      "minLength": 3,
+      "maxLength": 20,
+      "metadata": {
+        "description": "Base name for all resources"
+      }
+    },
+    "templateVariant": {
+      "type": "string",
+      "defaultValue": "full",
+      "allowedValues": [
+        "simple",
+        "full"
+      ],
+      "metadata": {
+        "description": "Template variant: simple (SSHD only) or full (all services)"
+      }
+    },
+    "vnetAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/16",
+      "metadata": {
+        "description": "VNet address space"
+      }
+    },
+    "containerAppsCoreSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.8.0/23",
+      "metadata": {
+        "description": "Core Container Apps subnet CIDR (init jobs, tools, redoer)"
+      }
+    },
+    "containerAppsLoaderSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.10.0/23",
+      "metadata": {
+        "description": "Loader Container Apps subnet CIDR (streamloader)"
+      }
+    },
+    "containerAppsProducerSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.12.0/23",
+      "metadata": {
+        "description": "Producer Container Apps subnet CIDR (producer jobs)"
+      }
+    },
+    "sqlSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.16.0/22",
+      "metadata": {
+        "description": "Azure SQL subnet CIDR"
+      }
+    },
+    "sqlAdminLogin": {
+      "type": "string",
+      "defaultValue": "senzing",
+      "metadata": {
+        "description": "Azure SQL administrator login"
+      }
+    },
+    "sqlAdminPassword": {
+      "type": "securestring",
+      "defaultValue": "[newGuid()]",
+      "metadata": {
+        "description": "Azure SQL administrator password (used only for init)"
+      }
+    },
+    "sqlSku": {
+      "type": "string",
+      "defaultValue": "GP_Gen5_8",
+      "metadata": {
+        "description": "Azure SQL SKU name (DTU or vCore based)"
+      }
+    },
+    "sqlMaxSizeGB": {
+      "type": "int",
+      "defaultValue": 256,
+      "metadata": {
+        "description": "Azure SQL max size in GB"
+      }
+    },
+    "databaseName": {
+      "type": "string",
+      "defaultValue": "SZ",
+      "metadata": {
+        "description": "Database name"
+      }
+    },
+    "streamLoaderMaxReplicas": {
+      "type": "int",
+      "defaultValue": 50,
+      "metadata": {
+        "description": "StreamLoader max replicas"
+      }
+    },
+    "redoerMaxReplicas": {
+      "type": "int",
+      "defaultValue": 5,
+      "metadata": {
+        "description": "Redoer max replicas"
+      }
+    },
+    "serviceBusSku": {
+      "type": "string",
+      "defaultValue": "Premium",
+      "allowedValues": [
+        "Standard",
+        "Premium"
+      ],
+      "metadata": {
+        "description": "Service Bus SKU: Standard (~$10/month, throttled) or Premium (~$677/month, no throttling)"
+      }
+    },
+    "initDatabaseImage": {
+      "type": "string",
+      "defaultValue": "public.ecr.aws/senzing/init-database:latest",
+      "metadata": {
+        "description": "Senzing init-database image"
+      }
+    },
+    "senzingToolsImage": {
+      "type": "string",
+      "defaultValue": "public.ecr.aws/senzing/senzingsdk-tools:latest",
+      "metadata": {
+        "description": "Senzing tools image (for tools container and g2configtool job)"
+      }
+    },
+    "streamLoaderImage": {
+      "type": "string",
+      "defaultValue": "public.ecr.aws/senzing/stream-loader:latest",
+      "metadata": {
+        "description": "Senzing StreamLoader image"
+      }
+    },
+    "redoerImage": {
+      "type": "string",
+      "defaultValue": "public.ecr.aws/senzing/redoer:latest",
+      "metadata": {
+        "description": "Senzing Redoer image"
+      }
+    },
+    "streamProducerImage": {
+      "type": "string",
+      "defaultValue": "public.ecr.aws/senzing/stream-producer:latest",
+      "metadata": {
+        "description": "Senzing Stream Producer image"
+      }
+    },
+    "runStreamProducer": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Run Stream Producer to load test data"
+      }
+    },
+    "acrName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Azure Container Registry name (for image pull permissions)"
+      }
+    },
+    "acrResourceGroup": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource group containing the ACR (if different from deployment resource group)"
+      }
+    },
+    "skipStreamLoader": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Skip StreamLoader deployment (deploy it later when ready to start perf test)"
+      }
+    },
+    "streamLoaderMinReplicas": {
+      "type": "int",
+      "defaultValue": 8,
+      "metadata": {
+        "description": "Minimum StreamLoader replicas (set to match AWS for comparison)"
+      }
+    },
+    "recordMax": {
+      "type": "int",
+      "defaultValue": 1000000,
+      "allowedValues": [
+        1,
+        1000000,
+        2000000,
+        5000000,
+        10000000,
+        20000000,
+        25000000,
+        50000000,
+        100000000
+      ],
+      "metadata": {
+        "description": "Number of test records to load (only used if runStreamProducer is true)"
+      }
+    },
+    "testDataInputUrl": {
+      "type": "string",
+      "defaultValue": "https://ronperftestdata.blob.core.windows.net/testdatasets/test-dataset-100m.json.gz",
+      "metadata": {
+        "description": "Test data file URL (use Azure Blob for best performance)"
+      }
+    }
+  },
+  "variables": {
+    "uniqueSuffix": "[uniqueString(resourceGroup().id)]",
+    "resourcePrefix": "[format('{0}-{1}', parameters('baseName'), variables('uniqueSuffix'))]",
+    "runFullServices": "[equals(parameters('templateVariant'), 'full')]",
+    "acrLoginServer": "[if(not(empty(parameters('acrName'))), toLower(format('{0}.azurecr.io', parameters('acrName'))), '')]",
+    "effectiveAcrResourceGroup": "[if(not(empty(parameters('acrResourceGroup'))), parameters('acrResourceGroup'), resourceGroup().name)]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "logAnalytics",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-logs', variables('resourcePrefix'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "15417478497162836544"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Log Analytics workspace"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the workspace"
+              }
+            },
+            "retentionInDays": {
+              "type": "int",
+              "defaultValue": 30,
+              "metadata": {
+                "description": "Retention period in days"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "apiVersion": "2022-10-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": "[parameters('retentionInDays')]",
+                "features": {
+                  "enableLogAccessUsingOnlyResourcePermissions": true
+                },
+                "workspaceCapping": {
+                  "dailyQuotaGb": -1
+                },
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Enabled"
+              }
+            }
+          ],
+          "outputs": {
+            "workspaceId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('name'))]"
+            },
+            "workspaceName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "customerId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', parameters('name')), '2022-10-01').customerId]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "network",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-vnet', variables('resourcePrefix'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "addressPrefix": {
+            "value": "[parameters('vnetAddressPrefix')]"
+          },
+          "containerAppsCoreSubnetPrefix": {
+            "value": "[parameters('containerAppsCoreSubnetPrefix')]"
+          },
+          "containerAppsLoaderSubnetPrefix": {
+            "value": "[parameters('containerAppsLoaderSubnetPrefix')]"
+          },
+          "containerAppsProducerSubnetPrefix": {
+            "value": "[parameters('containerAppsProducerSubnetPrefix')]"
+          },
+          "sqlSubnetPrefix": {
+            "value": "[parameters('sqlSubnetPrefix')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "17260663647404282382"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the virtual network"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the virtual network"
+              }
+            },
+            "addressPrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "Address prefix for the VNet"
+              }
+            },
+            "containerAppsCoreSubnetPrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "Address prefix for Core Container Apps subnet (init jobs, tools, redoer)"
+              }
+            },
+            "containerAppsLoaderSubnetPrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "Address prefix for Loader Container Apps subnet (streamloader)"
+              }
+            },
+            "containerAppsProducerSubnetPrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "Address prefix for Producer Container Apps subnet (producer jobs)"
+              }
+            },
+            "sqlSubnetPrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "Address prefix for Azure SQL subnet (for private endpoint)"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "addressSpace": {
+                  "addressPrefixes": [
+                    "[parameters('addressPrefix')]"
+                  ]
+                },
+                "subnets": [
+                  {
+                    "name": "container-apps-core-subnet",
+                    "properties": {
+                      "addressPrefix": "[parameters('containerAppsCoreSubnetPrefix')]"
+                    }
+                  },
+                  {
+                    "name": "container-apps-loader-subnet",
+                    "properties": {
+                      "addressPrefix": "[parameters('containerAppsLoaderSubnetPrefix')]"
+                    }
+                  },
+                  {
+                    "name": "container-apps-producer-subnet",
+                    "properties": {
+                      "addressPrefix": "[parameters('containerAppsProducerSubnetPrefix')]"
+                    }
+                  },
+                  {
+                    "name": "sql-subnet",
+                    "properties": {
+                      "addressPrefix": "[parameters('sqlSubnetPrefix')]",
+                      "privateEndpointNetworkPolicies": "Disabled"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Network/privateDnsZones",
+              "apiVersion": "2020-06-01",
+              "name": "[format('privatelink{0}', environment().suffixes.sqlServerHostname)]",
+              "location": "global"
+            },
+            {
+              "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+              "apiVersion": "2020-06-01",
+              "name": "[format('{0}/{1}', format('privatelink{0}', environment().suffixes.sqlServerHostname), format('{0}-link', parameters('name')))]",
+              "location": "global",
+              "properties": {
+                "registrationEnabled": false,
+                "virtualNetwork": {
+                  "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('name'))]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/privateDnsZones', format('privatelink{0}', environment().suffixes.sqlServerHostname))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "vnetId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('name'))]"
+            },
+            "vnetName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "containerAppsCoreSubnetId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('name')), '2023-09-01').subnets[0].id]"
+            },
+            "containerAppsLoaderSubnetId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('name')), '2023-09-01').subnets[1].id]"
+            },
+            "containerAppsProducerSubnetId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('name')), '2023-09-01').subnets[2].id]"
+            },
+            "sqlSubnetId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('name')), '2023-09-01').subnets[3].id]"
+            },
+            "privateDnsZoneId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/privateDnsZones', format('privatelink{0}', environment().suffixes.sqlServerHostname))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "nsg",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-nsg', variables('resourcePrefix'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "7994940808350746061"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the network security group"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the network security group"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/networkSecurityGroups",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "securityRules": [
+                  {
+                    "name": "AllowSSH",
+                    "properties": {
+                      "priority": 100,
+                      "direction": "Inbound",
+                      "access": "Allow",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "22",
+                      "sourceAddressPrefix": "*",
+                      "destinationAddressPrefix": "*"
+                    }
+                  },
+                  {
+                    "name": "AllowHTTPS",
+                    "properties": {
+                      "priority": 110,
+                      "direction": "Inbound",
+                      "access": "Allow",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "443",
+                      "sourceAddressPrefix": "*",
+                      "destinationAddressPrefix": "*"
+                    }
+                  },
+                  {
+                    "name": "AllowSQLServer",
+                    "properties": {
+                      "priority": 120,
+                      "direction": "Inbound",
+                      "access": "Allow",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "1433",
+                      "sourceAddressPrefix": "VirtualNetwork",
+                      "destinationAddressPrefix": "VirtualNetwork"
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "outputs": {
+            "nsgId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('name'))]"
+            },
+            "nsgName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "managedIdentity",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-mi', variables('resourcePrefix'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "4568857481858783553"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the managed identity"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the managed identity"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+              "apiVersion": "2023-01-31",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]"
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "principalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2023-01-31').principalId]"
+            },
+            "clientId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2023-01-31').clientId]"
+            },
+            "tenantId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2023-01-31').tenantId]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "keyVault",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[replace(format('{0}-kv', variables('resourcePrefix')), '-', '')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "managedIdentityPrincipalId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'managedIdentity'), '2025-04-01').outputs.principalId.value]"
+          },
+          "senzingLicenseBase64": {
+            "value": "[parameters('senzingLicenseBase64')]"
+          },
+          "sqlPassword": {
+            "value": "[parameters('sqlAdminPassword')]"
+          },
+          "senzingConfigPassword": {
+            "value": "[string(createObject('PIPELINE', createObject('CONFIGPATH', '/etc/opt/senzing', 'LICENSESTRINGBASE64', parameters('senzingLicenseBase64'), 'RESOURCEPATH', '/opt/senzing/er/resources', 'SUPPORTPATH', '/opt/senzing/data'), 'SQL', createObject('BACKEND', 'SQL', 'CONNECTION', format('mssql://{0}:{1}@{2}:1433:{3}/?encrypt=yes', parameters('sqlAdminLogin'), parameters('sqlAdminPassword'), reference(resourceId('Microsoft.Resources/deployments', 'sqlServer'), '2025-04-01').outputs.fqdn.value, parameters('databaseName')))))]"
+          },
+          "senzingConfigManagedIdentity": {
+            "value": "[string(createObject('PIPELINE', createObject('CONFIGPATH', '/etc/opt/senzing', 'LICENSESTRINGBASE64', parameters('senzingLicenseBase64'), 'RESOURCEPATH', '/opt/senzing/er/resources', 'SUPPORTPATH', '/opt/senzing/data'), 'SQL', createObject('BACKEND', 'SQL', 'CONNECTION', format('mssql://{0}:dummy@{1}:1433:{2}/?authentication=ActiveDirectoryMsi&encrypt=yes', reference(resourceId('Microsoft.Resources/deployments', 'managedIdentity'), '2025-04-01').outputs.clientId.value, reference(resourceId('Microsoft.Resources/deployments', 'sqlServer'), '2025-04-01').outputs.fqdn.value, parameters('databaseName')))))]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "14351033093516775820"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Key Vault (must be globally unique)"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the Key Vault"
+              }
+            },
+            "managedIdentityPrincipalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Principal ID of the managed identity that needs access"
+              }
+            },
+            "senzingLicenseBase64": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Senzing license as base64"
+              }
+            },
+            "sqlPassword": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Azure SQL admin password"
+              }
+            },
+            "senzingConfigPassword": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Senzing engine configuration JSON (password-based)"
+              }
+            },
+            "senzingConfigManagedIdentity": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Senzing engine configuration JSON (managed identity)"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.KeyVault/vaults",
+              "apiVersion": "2023-07-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "sku": {
+                  "family": "A",
+                  "name": "standard"
+                },
+                "tenantId": "[subscription().tenantId]",
+                "enableRbacAuthorization": true,
+                "enableSoftDelete": true,
+                "softDeleteRetentionInDays": 7,
+                "publicNetworkAccess": "Enabled"
+              }
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.KeyVault/vaults/{0}', parameters('name'))]",
+              "name": "[guid(resourceId('Microsoft.KeyVault/vaults', parameters('name')), parameters('managedIdentityPrincipalId'), 'Key Vault Secrets User')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]",
+                "principalId": "[parameters('managedIdentityPrincipalId')]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2023-07-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'senzing-license')]",
+              "properties": {
+                "value": "[parameters('senzingLicenseBase64')]",
+                "contentType": "text/plain"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2023-07-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'sql-admin-password')]",
+              "properties": {
+                "value": "[parameters('sqlPassword')]",
+                "contentType": "text/plain"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2023-07-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'senzing-config-password')]",
+              "properties": {
+                "value": "[parameters('senzingConfigPassword')]",
+                "contentType": "application/json"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2023-07-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'senzing-config-mi')]",
+              "properties": {
+                "value": "[parameters('senzingConfigManagedIdentity')]",
+                "contentType": "application/json"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "vaultId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.KeyVault/vaults', parameters('name'))]"
+            },
+            "vaultName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "vaultUri": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults', parameters('name')), '2023-07-01').vaultUri]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'managedIdentity')]",
+        "[resourceId('Microsoft.Resources/deployments', 'sqlServer')]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('acrName')))]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "acrPullRole",
+      "resourceGroup": "[variables('effectiveAcrResourceGroup')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "acrName": {
+            "value": "[parameters('acrName')]"
+          },
+          "principalId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'managedIdentity'), '2025-04-01').outputs.principalId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "14694408786326494249"
+            }
+          },
+          "parameters": {
+            "acrName": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Azure Container Registry"
+              }
+            },
+            "principalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Principal ID of the managed identity that needs pull access"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.ContainerRegistry/registries/{0}', parameters('acrName'))]",
+              "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), parameters('principalId'), 'AcrPull')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
+                "principalId": "[parameters('principalId')]",
+                "principalType": "ServicePrincipal"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'managedIdentity')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "sqlServer",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-sql', variables('resourcePrefix'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "administratorLogin": {
+            "value": "[parameters('sqlAdminLogin')]"
+          },
+          "administratorPassword": {
+            "value": "[parameters('sqlAdminPassword')]"
+          },
+          "skuName": {
+            "value": "[parameters('sqlSku')]"
+          },
+          "maxSizeGB": {
+            "value": "[parameters('sqlMaxSizeGB')]"
+          },
+          "databaseName": {
+            "value": "[parameters('databaseName')]"
+          },
+          "subnetId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'network'), '2025-04-01').outputs.sqlSubnetId.value]"
+          },
+          "privateDnsZoneId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'network'), '2025-04-01').outputs.privateDnsZoneId.value]"
+          },
+          "managedIdentityPrincipalId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'managedIdentity'), '2025-04-01').outputs.principalId.value]"
+          },
+          "managedIdentityName": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'managedIdentity'), '2025-04-01').outputs.name.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "15316588869625327535"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the SQL Server (will be globally unique)"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the server"
+              }
+            },
+            "administratorLogin": {
+              "type": "string",
+              "metadata": {
+                "description": "Administrator login name"
+              }
+            },
+            "administratorPassword": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Administrator password"
+              }
+            },
+            "skuName": {
+              "type": "string",
+              "metadata": {
+                "description": "SKU name for the database (e.g., GP_Gen5_8 for General Purpose)"
+              }
+            },
+            "maxSizeGB": {
+              "type": "int",
+              "metadata": {
+                "description": "Max size in GB"
+              }
+            },
+            "databaseName": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the database to create"
+              }
+            },
+            "subnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "Subnet ID for private endpoint"
+              }
+            },
+            "privateDnsZoneId": {
+              "type": "string",
+              "metadata": {
+                "description": "Private DNS Zone ID"
+              }
+            },
+            "managedIdentityPrincipalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Managed Identity principal ID for AAD authentication"
+              }
+            },
+            "managedIdentityName": {
+              "type": "string",
+              "metadata": {
+                "description": "Managed Identity name for database user"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Sql/servers",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "administratorLogin": "[parameters('administratorLogin')]",
+                "administratorLoginPassword": "[parameters('administratorPassword')]",
+                "version": "12.0",
+                "minimalTlsVersion": "1.2",
+                "publicNetworkAccess": "Disabled"
+              }
+            },
+            {
+              "type": "Microsoft.Sql/servers/administrators",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('name'), 'ActiveDirectory')]",
+              "properties": {
+                "administratorType": "ActiveDirectory",
+                "login": "[parameters('managedIdentityName')]",
+                "sid": "[parameters('managedIdentityPrincipalId')]",
+                "tenantId": "[subscription().tenantId]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Sql/servers/databases",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('name'), parameters('databaseName'))]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "[parameters('skuName')]"
+              },
+              "properties": {
+                "collation": "SQL_Latin1_General_CP1_CI_AS",
+                "maxSizeBytes": "[mul(mul(mul(parameters('maxSizeGB'), 1024), 1024), 1024)]",
+                "catalogCollation": "SQL_Latin1_General_CP1_CI_AS",
+                "zoneRedundant": false,
+                "readScale": "Disabled",
+                "requestedBackupStorageRedundancy": "Local"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Network/privateEndpoints",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}-pe', parameters('name'))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "subnet": {
+                  "id": "[parameters('subnetId')]"
+                },
+                "privateLinkServiceConnections": [
+                  {
+                    "name": "[format('{0}-plsc', parameters('name'))]",
+                    "properties": {
+                      "privateLinkServiceId": "[resourceId('Microsoft.Sql/servers', parameters('name'))]",
+                      "groupIds": [
+                        "sqlServer"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}/{1}', format('{0}-pe', parameters('name')), 'default')]",
+              "properties": {
+                "privateDnsZoneConfigs": [
+                  {
+                    "name": "privatelink-database-windows-net",
+                    "properties": {
+                      "privateDnsZoneId": "[parameters('privateDnsZoneId')]"
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-pe', parameters('name')))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "serverId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Sql/servers', parameters('name'))]"
+            },
+            "serverName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "fqdn": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Sql/servers', parameters('name')), '2023-05-01-preview').fullyQualifiedDomainName]"
+            },
+            "databaseName": {
+              "type": "string",
+              "value": "[parameters('databaseName')]"
+            },
+            "databaseId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Sql/servers/databases', parameters('name'), parameters('databaseName'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'managedIdentity')]",
+        "[resourceId('Microsoft.Resources/deployments', 'network')]"
+      ]
+    },
+    {
+      "condition": "[variables('runFullServices')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "serviceBus",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-bus', variables('resourcePrefix'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "managedIdentityPrincipalId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'managedIdentity'), '2025-04-01').outputs.principalId.value]"
+          },
+          "sku": {
+            "value": "[parameters('serviceBusSku')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "2459493336441231769"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Service Bus namespace"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the Service Bus"
+              }
+            },
+            "managedIdentityPrincipalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Principal ID of the managed identity that needs access"
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "Premium",
+              "allowedValues": [
+                "Standard",
+                "Premium"
+              ],
+              "metadata": {
+                "description": "Service Bus SKU: Standard (~$10/month, shared, throttled) or Premium (~$677/month, dedicated, no throttling)"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ServiceBus/namespaces",
+              "apiVersion": "2022-10-01-preview",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "[parameters('sku')]",
+                "tier": "[parameters('sku')]",
+                "capacity": "[if(equals(parameters('sku'), 'Premium'), 1, null())]"
+              },
+              "properties": {
+                "minimumTlsVersion": "1.2",
+                "publicNetworkAccess": "Enabled"
+              }
+            },
+            {
+              "type": "Microsoft.ServiceBus/namespaces/queues",
+              "apiVersion": "2022-10-01-preview",
+              "name": "[format('{0}/{1}', parameters('name'), 'senzing-input')]",
+              "properties": {
+                "lockDuration": "PT5M",
+                "maxSizeInMegabytes": "[if(equals(parameters('sku'), 'Premium'), 81920, 5120)]",
+                "requiresDuplicateDetection": false,
+                "requiresSession": false,
+                "defaultMessageTimeToLive": "P14D",
+                "deadLetteringOnMessageExpiration": true,
+                "maxDeliveryCount": 10,
+                "enablePartitioning": false,
+                "enableBatchedOperations": true
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ServiceBus/namespaces', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ServiceBus/namespaces/queues",
+              "apiVersion": "2022-10-01-preview",
+              "name": "[format('{0}/{1}', parameters('name'), 'senzing-redo')]",
+              "properties": {
+                "lockDuration": "PT5M",
+                "maxSizeInMegabytes": 1024,
+                "requiresDuplicateDetection": false,
+                "requiresSession": false,
+                "defaultMessageTimeToLive": "P14D",
+                "deadLetteringOnMessageExpiration": true,
+                "maxDeliveryCount": 10,
+                "enablePartitioning": false,
+                "enableBatchedOperations": true
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ServiceBus/namespaces', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.ServiceBus/namespaces/{0}', parameters('name'))]",
+              "name": "[guid(resourceId('Microsoft.ServiceBus/namespaces', parameters('name')), parameters('managedIdentityPrincipalId'), 'Service Bus Data Sender')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '69a216fc-b8fb-44d8-bc22-1f3c2cd27a39')]",
+                "principalId": "[parameters('managedIdentityPrincipalId')]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ServiceBus/namespaces', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.ServiceBus/namespaces/{0}', parameters('name'))]",
+              "name": "[guid(resourceId('Microsoft.ServiceBus/namespaces', parameters('name')), parameters('managedIdentityPrincipalId'), 'Service Bus Data Receiver')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0')]",
+                "principalId": "[parameters('managedIdentityPrincipalId')]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ServiceBus/namespaces', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ServiceBus/namespaces/AuthorizationRules",
+              "apiVersion": "2022-10-01-preview",
+              "name": "[format('{0}/{1}', parameters('name'), 'SendPolicy')]",
+              "properties": {
+                "rights": [
+                  "Send"
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ServiceBus/namespaces', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ServiceBus/namespaces/AuthorizationRules",
+              "apiVersion": "2022-10-01-preview",
+              "name": "[format('{0}/{1}', parameters('name'), 'ListenPolicy')]",
+              "properties": {
+                "rights": [
+                  "Listen"
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ServiceBus/namespaces', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ServiceBus/namespaces/AuthorizationRules",
+              "apiVersion": "2022-10-01-preview",
+              "name": "[format('{0}/{1}', parameters('name'), 'ManagePolicy')]",
+              "properties": {
+                "rights": [
+                  "Manage",
+                  "Listen",
+                  "Send"
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ServiceBus/namespaces', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "namespaceId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ServiceBus/namespaces', parameters('name'))]"
+            },
+            "namespaceName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "inputQueueName": {
+              "type": "string",
+              "value": "senzing-input"
+            },
+            "redoQueueName": {
+              "type": "string",
+              "value": "senzing-redo"
+            },
+            "endpoint": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ServiceBus/namespaces', parameters('name')), '2022-10-01-preview').serviceBusEndpoint]"
+            },
+            "connectionString": {
+              "type": "string",
+              "value": "[listKeys(resourceId('Microsoft.ServiceBus/namespaces/AuthorizationRules', parameters('name'), 'SendPolicy'), '2022-10-01-preview').primaryConnectionString]"
+            },
+            "listenConnectionString": {
+              "type": "string",
+              "value": "[listKeys(resourceId('Microsoft.ServiceBus/namespaces/AuthorizationRules', parameters('name'), 'ListenPolicy'), '2022-10-01-preview').primaryConnectionString]"
+            },
+            "manageConnectionString": {
+              "type": "string",
+              "value": "[listKeys(resourceId('Microsoft.ServiceBus/namespaces/AuthorizationRules', parameters('name'), 'ManagePolicy'), '2022-10-01-preview').primaryConnectionString]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'managedIdentity')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "containerAppsEnvCore",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-cae-core', variables('resourcePrefix'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "logAnalyticsWorkspaceId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'logAnalytics'), '2025-04-01').outputs.workspaceId.value]"
+          },
+          "subnetId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'network'), '2025-04-01').outputs.containerAppsCoreSubnetId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "1360222307466261325"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Container Apps Environment"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the environment"
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Log Analytics workspace ID"
+              }
+            },
+            "subnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "Subnet ID for VNet integration"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/managedEnvironments",
+              "apiVersion": "2023-05-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "appLogsConfiguration": {
+                  "destination": "log-analytics",
+                  "logAnalyticsConfiguration": {
+                    "customerId": "[reference(parameters('logAnalyticsWorkspaceId'), '2022-10-01').customerId]",
+                    "sharedKey": "[listKeys(parameters('logAnalyticsWorkspaceId'), '2022-10-01').primarySharedKey]"
+                  }
+                },
+                "vnetConfiguration": {
+                  "infrastructureSubnetId": "[parameters('subnetId')]",
+                  "internal": false
+                },
+                "zoneRedundant": false
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.App/managedEnvironments', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "defaultDomain": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.App/managedEnvironments', parameters('name')), '2023-05-01').defaultDomain]"
+            },
+            "staticIp": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.App/managedEnvironments', parameters('name')), '2023-05-01').staticIp]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'logAnalytics')]",
+        "[resourceId('Microsoft.Resources/deployments', 'network')]"
+      ]
+    },
+    {
+      "condition": "[variables('runFullServices')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "containerAppsEnvLoader",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-cae-loader', variables('resourcePrefix'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "logAnalyticsWorkspaceId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'logAnalytics'), '2025-04-01').outputs.workspaceId.value]"
+          },
+          "subnetId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'network'), '2025-04-01').outputs.containerAppsLoaderSubnetId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "1360222307466261325"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Container Apps Environment"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the environment"
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Log Analytics workspace ID"
+              }
+            },
+            "subnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "Subnet ID for VNet integration"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/managedEnvironments",
+              "apiVersion": "2023-05-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "appLogsConfiguration": {
+                  "destination": "log-analytics",
+                  "logAnalyticsConfiguration": {
+                    "customerId": "[reference(parameters('logAnalyticsWorkspaceId'), '2022-10-01').customerId]",
+                    "sharedKey": "[listKeys(parameters('logAnalyticsWorkspaceId'), '2022-10-01').primarySharedKey]"
+                  }
+                },
+                "vnetConfiguration": {
+                  "infrastructureSubnetId": "[parameters('subnetId')]",
+                  "internal": false
+                },
+                "zoneRedundant": false
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.App/managedEnvironments', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "defaultDomain": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.App/managedEnvironments', parameters('name')), '2023-05-01').defaultDomain]"
+            },
+            "staticIp": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.App/managedEnvironments', parameters('name')), '2023-05-01').staticIp]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'logAnalytics')]",
+        "[resourceId('Microsoft.Resources/deployments', 'network')]"
+      ]
+    },
+    {
+      "condition": "[and(variables('runFullServices'), parameters('runStreamProducer'))]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "containerAppsEnvProducer",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-cae-producer', variables('resourcePrefix'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "logAnalyticsWorkspaceId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'logAnalytics'), '2025-04-01').outputs.workspaceId.value]"
+          },
+          "subnetId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'network'), '2025-04-01').outputs.containerAppsProducerSubnetId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "1360222307466261325"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Container Apps Environment"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the environment"
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Log Analytics workspace ID"
+              }
+            },
+            "subnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "Subnet ID for VNet integration"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/managedEnvironments",
+              "apiVersion": "2023-05-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "appLogsConfiguration": {
+                  "destination": "log-analytics",
+                  "logAnalyticsConfiguration": {
+                    "customerId": "[reference(parameters('logAnalyticsWorkspaceId'), '2022-10-01').customerId]",
+                    "sharedKey": "[listKeys(parameters('logAnalyticsWorkspaceId'), '2022-10-01').primarySharedKey]"
+                  }
+                },
+                "vnetConfiguration": {
+                  "infrastructureSubnetId": "[parameters('subnetId')]",
+                  "internal": false
+                },
+                "zoneRedundant": false
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.App/managedEnvironments', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "defaultDomain": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.App/managedEnvironments', parameters('name')), '2023-05-01').defaultDomain]"
+            },
+            "staticIp": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.App/managedEnvironments', parameters('name')), '2023-05-01').staticIp]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'logAnalytics')]",
+        "[resourceId('Microsoft.Resources/deployments', 'network')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "initDatabaseJob",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-init-db', variables('resourcePrefix'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "containerAppsEnvId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerAppsEnvCore'), '2025-04-01').outputs.id.value]"
+          },
+          "image": {
+            "value": "[parameters('initDatabaseImage')]"
+          },
+          "senzingConfigJson": {
+            "value": "[string(createObject('PIPELINE', createObject('CONFIGPATH', '/etc/opt/senzing', 'LICENSESTRINGBASE64', parameters('senzingLicenseBase64'), 'RESOURCEPATH', '/opt/senzing/er/resources', 'SUPPORTPATH', '/opt/senzing/data'), 'SQL', createObject('BACKEND', 'SQL', 'CONNECTION', format('mssql://{0}:{1}@{2}:1433:{3}/?encrypt=yes', parameters('sqlAdminLogin'), parameters('sqlAdminPassword'), reference(resourceId('Microsoft.Resources/deployments', 'sqlServer'), '2025-04-01').outputs.fqdn.value, parameters('databaseName')))))]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "8165929127812565628"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the job"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the job"
+              }
+            },
+            "containerAppsEnvId": {
+              "type": "string",
+              "metadata": {
+                "description": "Container Apps Environment ID"
+              }
+            },
+            "image": {
+              "type": "string",
+              "metadata": {
+                "description": "Senzing init-database container image"
+              }
+            },
+            "senzingConfigJson": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Senzing engine configuration JSON (password-based)"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/jobs",
+              "apiVersion": "2023-05-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "environmentId": "[parameters('containerAppsEnvId')]",
+                "configuration": {
+                  "triggerType": "Manual",
+                  "replicaTimeout": 1800,
+                  "replicaRetryLimit": 1,
+                  "secrets": [
+                    {
+                      "name": "senzing-config",
+                      "value": "[parameters('senzingConfigJson')]"
+                    }
+                  ]
+                },
+                "template": {
+                  "containers": [
+                    {
+                      "name": "init-database",
+                      "image": "[parameters('image')]",
+                      "resources": {
+                        "cpu": "[json('2.0')]",
+                        "memory": "4Gi"
+                      },
+                      "env": [
+                        {
+                          "name": "SENZING_ENGINE_CONFIGURATION_JSON",
+                          "secretRef": "senzing-config"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "jobId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.App/jobs', parameters('name'))]"
+            },
+            "jobName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('effectiveAcrResourceGroup')), 'Microsoft.Resources/deployments', 'acrPullRole')]",
+        "[resourceId('Microsoft.Resources/deployments', 'containerAppsEnvCore')]",
+        "[resourceId('Microsoft.Resources/deployments', 'sqlServer')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "configureDatabaseJob",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-config-db', variables('resourcePrefix'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "containerAppsEnvId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerAppsEnvCore'), '2025-04-01').outputs.id.value]"
+          },
+          "sqlHost": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'sqlServer'), '2025-04-01').outputs.fqdn.value]"
+          },
+          "sqlPort": {
+            "value": 1433
+          },
+          "sqlDatabase": {
+            "value": "[parameters('databaseName')]"
+          },
+          "sqlAdminUser": {
+            "value": "[parameters('sqlAdminLogin')]"
+          },
+          "sqlAdminPassword": {
+            "value": "[parameters('sqlAdminPassword')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "2672346667665291256"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the job"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the job"
+              }
+            },
+            "containerAppsEnvId": {
+              "type": "string",
+              "metadata": {
+                "description": "Container Apps Environment ID"
+              }
+            },
+            "sqlHost": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure SQL server hostname"
+              }
+            },
+            "sqlPort": {
+              "type": "int",
+              "metadata": {
+                "description": "Azure SQL server port"
+              }
+            },
+            "sqlDatabase": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure SQL database name"
+              }
+            },
+            "sqlAdminUser": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure SQL admin username"
+              }
+            },
+            "sqlAdminPassword": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Azure SQL admin password"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/jobs",
+              "apiVersion": "2023-05-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "environmentId": "[parameters('containerAppsEnvId')]",
+                "configuration": {
+                  "triggerType": "Manual",
+                  "replicaTimeout": 600,
+                  "replicaRetryLimit": 1,
+                  "secrets": [
+                    {
+                      "name": "sql-password",
+                      "value": "[parameters('sqlAdminPassword')]"
+                    }
+                  ]
+                },
+                "template": {
+                  "containers": [
+                    {
+                      "name": "configure-database",
+                      "image": "mcr.microsoft.com/mssql-tools:latest",
+                      "resources": {
+                        "cpu": "[json('0.5')]",
+                        "memory": "1Gi"
+                      },
+                      "env": [
+                        {
+                          "name": "SQL_HOST",
+                          "value": "[parameters('sqlHost')]"
+                        },
+                        {
+                          "name": "SQL_PORT",
+                          "value": "[string(parameters('sqlPort'))]"
+                        },
+                        {
+                          "name": "SQL_DATABASE",
+                          "value": "[parameters('sqlDatabase')]"
+                        },
+                        {
+                          "name": "SQL_USER",
+                          "value": "[parameters('sqlAdminUser')]"
+                        },
+                        {
+                          "name": "SQL_PASSWORD",
+                          "secretRef": "sql-password"
+                        }
+                      ],
+                      "command": [
+                        "/bin/bash",
+                        "-c",
+                        "            echo \"Configuring database performance settings...\"\n\n            # Wait for database to be ready\n            for i in {1..30}; do\n              /opt/mssql-tools/bin/sqlcmd -S \"$SQL_HOST,$SQL_PORT\" -U \"$SQL_USER\" -P \"$SQL_PASSWORD\" -d master -Q \"SELECT 1\" > /dev/null 2>&1\n              if [ $? -eq 0 ]; then\n                echo \"Database is ready\"\n                break\n              fi\n              echo \"Waiting for SQL Server... (attempt $i/30)\"\n              sleep 10\n            done\n\n            # Configure DELAYED_DURABILITY for better write performance\n            echo \"Setting DELAYED_DURABILITY = Forced...\"\n            /opt/mssql-tools/bin/sqlcmd -S \"$SQL_HOST,$SQL_PORT\" -U \"$SQL_USER\" -P \"$SQL_PASSWORD\" -d \"$SQL_DATABASE\" -Q \"\n            ALTER DATABASE CURRENT SET DELAYED_DURABILITY = Forced;\n            PRINT 'DELAYED_DURABILITY set to Forced';\n            \"\n\n            # Enable auto-create statistics\n            echo \"Setting AUTO_CREATE_STATISTICS ON...\"\n            /opt/mssql-tools/bin/sqlcmd -S \"$SQL_HOST,$SQL_PORT\" -U \"$SQL_USER\" -P \"$SQL_PASSWORD\" -d \"$SQL_DATABASE\" -Q \"\n            ALTER DATABASE CURRENT SET AUTO_CREATE_STATISTICS ON;\n            PRINT 'AUTO_CREATE_STATISTICS enabled';\n            \"\n\n            # Enable async statistics updates\n            echo \"Setting AUTO_UPDATE_STATISTICS_ASYNC ON...\"\n            /opt/mssql-tools/bin/sqlcmd -S \"$SQL_HOST,$SQL_PORT\" -U \"$SQL_USER\" -P \"$SQL_PASSWORD\" -d \"$SQL_DATABASE\" -Q \"\n            ALTER DATABASE CURRENT SET AUTO_UPDATE_STATISTICS_ASYNC ON;\n            PRINT 'AUTO_UPDATE_STATISTICS_ASYNC enabled';\n            \"\n\n            echo \"Database configuration complete\"\n            "
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "jobId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.App/jobs', parameters('name'))]"
+            },
+            "jobName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'containerAppsEnvCore')]",
+        "[resourceId('Microsoft.Resources/deployments', 'initDatabaseJob')]",
+        "[resourceId('Microsoft.Resources/deployments', 'sqlServer')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "createMiUserJob",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-create-mi', variables('resourcePrefix'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "containerAppsEnvId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerAppsEnvCore'), '2025-04-01').outputs.id.value]"
+          },
+          "sqlHost": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'sqlServer'), '2025-04-01').outputs.fqdn.value]"
+          },
+          "sqlPort": {
+            "value": 1433
+          },
+          "sqlDatabase": {
+            "value": "[parameters('databaseName')]"
+          },
+          "sqlAdminUser": {
+            "value": "[parameters('sqlAdminLogin')]"
+          },
+          "sqlAdminPassword": {
+            "value": "[parameters('sqlAdminPassword')]"
+          },
+          "managedIdentityName": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'managedIdentity'), '2025-04-01').outputs.name.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "1425350313945296596"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the job"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the job"
+              }
+            },
+            "containerAppsEnvId": {
+              "type": "string",
+              "metadata": {
+                "description": "Container Apps Environment ID"
+              }
+            },
+            "sqlHost": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure SQL server hostname"
+              }
+            },
+            "sqlPort": {
+              "type": "int",
+              "metadata": {
+                "description": "Azure SQL server port"
+              }
+            },
+            "sqlDatabase": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure SQL database name"
+              }
+            },
+            "sqlAdminUser": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure SQL admin username"
+              }
+            },
+            "sqlAdminPassword": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Azure SQL admin password"
+              }
+            },
+            "managedIdentityName": {
+              "type": "string",
+              "metadata": {
+                "description": "Managed Identity name to create as database user"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/jobs",
+              "apiVersion": "2023-05-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "environmentId": "[parameters('containerAppsEnvId')]",
+                "configuration": {
+                  "triggerType": "Manual",
+                  "replicaTimeout": 600,
+                  "replicaRetryLimit": 1,
+                  "secrets": [
+                    {
+                      "name": "sql-password",
+                      "value": "[parameters('sqlAdminPassword')]"
+                    }
+                  ]
+                },
+                "template": {
+                  "containers": [
+                    {
+                      "name": "create-mi-user",
+                      "image": "mcr.microsoft.com/mssql-tools:latest",
+                      "resources": {
+                        "cpu": "[json('0.5')]",
+                        "memory": "1Gi"
+                      },
+                      "env": [
+                        {
+                          "name": "SQL_HOST",
+                          "value": "[parameters('sqlHost')]"
+                        },
+                        {
+                          "name": "SQL_PORT",
+                          "value": "[string(parameters('sqlPort'))]"
+                        },
+                        {
+                          "name": "SQL_DATABASE",
+                          "value": "[parameters('sqlDatabase')]"
+                        },
+                        {
+                          "name": "SQL_USER",
+                          "value": "[parameters('sqlAdminUser')]"
+                        },
+                        {
+                          "name": "SQL_PASSWORD",
+                          "secretRef": "sql-password"
+                        },
+                        {
+                          "name": "MI_NAME",
+                          "value": "[parameters('managedIdentityName')]"
+                        }
+                      ],
+                      "command": [
+                        "/bin/bash",
+                        "-c",
+                        "            echo \"Creating Managed Identity database user: $MI_NAME\"\n\n            # Wait for database to be ready\n            for i in {1..30}; do\n              /opt/mssql-tools/bin/sqlcmd -S \"$SQL_HOST,$SQL_PORT\" -U \"$SQL_USER\" -P \"$SQL_PASSWORD\" -d master -Q \"SELECT 1\" > /dev/null 2>&1\n              if [ $? -eq 0 ]; then\n                echo \"Database is ready\"\n                break\n              fi\n              echo \"Waiting for SQL Server... (attempt $i/30)\"\n              sleep 10\n            done\n\n            # Create the managed identity user from Azure AD\n            # In Azure SQL, external users are created with CREATE USER ... FROM EXTERNAL PROVIDER\n            /opt/mssql-tools/bin/sqlcmd -S \"$SQL_HOST,$SQL_PORT\" -U \"$SQL_USER\" -P \"$SQL_PASSWORD\" -d \"$SQL_DATABASE\" -Q \"\n            IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '$MI_NAME')\n            BEGIN\n                CREATE USER [$MI_NAME] FROM EXTERNAL PROVIDER;\n                PRINT 'Created user $MI_NAME';\n            END\n            ELSE\n            BEGIN\n                PRINT 'User $MI_NAME already exists';\n            END\n            \"\n\n            # Grant permissions\n            /opt/mssql-tools/bin/sqlcmd -S \"$SQL_HOST,$SQL_PORT\" -U \"$SQL_USER\" -P \"$SQL_PASSWORD\" -d \"$SQL_DATABASE\" -Q \"\n            ALTER ROLE db_owner ADD MEMBER [$MI_NAME];\n            PRINT 'Granted db_owner role to $MI_NAME';\n            \"\n\n            echo \"Managed Identity user created and granted permissions\"\n            "
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "jobId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.App/jobs', parameters('name'))]"
+            },
+            "jobName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'configureDatabaseJob')]",
+        "[resourceId('Microsoft.Resources/deployments', 'containerAppsEnvCore')]",
+        "[resourceId('Microsoft.Resources/deployments', 'managedIdentity')]",
+        "[resourceId('Microsoft.Resources/deployments', 'sqlServer')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "g2ConfigToolJob",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-g2config', variables('resourcePrefix'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "containerAppsEnvId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerAppsEnvCore'), '2025-04-01').outputs.id.value]"
+          },
+          "image": {
+            "value": "[parameters('senzingToolsImage')]"
+          },
+          "senzingConfigJson": {
+            "value": "[string(createObject('PIPELINE', createObject('CONFIGPATH', '/etc/opt/senzing', 'LICENSESTRINGBASE64', parameters('senzingLicenseBase64'), 'RESOURCEPATH', '/opt/senzing/er/resources', 'SUPPORTPATH', '/opt/senzing/data'), 'SQL', createObject('BACKEND', 'SQL', 'CONNECTION', format('mssql://{0}:dummy@{1}:1433:{2}/?authentication=ActiveDirectoryMsi&encrypt=yes', reference(resourceId('Microsoft.Resources/deployments', 'managedIdentity'), '2025-04-01').outputs.clientId.value, reference(resourceId('Microsoft.Resources/deployments', 'sqlServer'), '2025-04-01').outputs.fqdn.value, parameters('databaseName')))))]"
+          },
+          "managedIdentityId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'managedIdentity'), '2025-04-01').outputs.id.value]"
+          },
+          "acrLoginServer": {
+            "value": "[variables('acrLoginServer')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "9510545081881977863"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the job"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the job"
+              }
+            },
+            "containerAppsEnvId": {
+              "type": "string",
+              "metadata": {
+                "description": "Container Apps Environment ID"
+              }
+            },
+            "image": {
+              "type": "string",
+              "metadata": {
+                "description": "Senzing SDK tools container image"
+              }
+            },
+            "senzingConfigJson": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Senzing engine configuration JSON (managed identity)"
+              }
+            },
+            "managedIdentityId": {
+              "type": "string",
+              "metadata": {
+                "description": "User-assigned Managed Identity resource ID"
+              }
+            },
+            "acrLoginServer": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "ACR login server (e.g., myacr.azurecr.io) - if provided, configures ACR pull with managed identity"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/jobs",
+              "apiVersion": "2023-05-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', parameters('managedIdentityId'))]": {}
+                }
+              },
+              "properties": {
+                "environmentId": "[parameters('containerAppsEnvId')]",
+                "configuration": {
+                  "triggerType": "Manual",
+                  "replicaTimeout": 600,
+                  "replicaRetryLimit": 1,
+                  "secrets": [
+                    {
+                      "name": "senzing-config",
+                      "value": "[parameters('senzingConfigJson')]"
+                    }
+                  ],
+                  "registries": "[if(not(empty(parameters('acrLoginServer'))), createArray(createObject('server', parameters('acrLoginServer'), 'identity', parameters('managedIdentityId'))), createArray())]"
+                },
+                "template": {
+                  "containers": [
+                    {
+                      "name": "g2configtool",
+                      "image": "[parameters('image')]",
+                      "resources": {
+                        "cpu": "[json('1.0')]",
+                        "memory": "2Gi"
+                      },
+                      "env": [
+                        {
+                          "name": "SENZING_ENGINE_CONFIGURATION_JSON",
+                          "secretRef": "senzing-config"
+                        }
+                      ],
+                      "command": [
+                        "/bin/bash",
+                        "-c",
+                        "            echo \"Configuring Senzing data sources using sz_configtool...\"\n\n            # Use sz_configtool to add data sources non-interactively\n            # This matches the AWS CFT EcsTaskDefinitionG2ConfigTool configuration\n            echo -e \"addDataSource CUSTOMERS\\naddDataSource REFERENCE\\naddDataSource WATCHLIST\\nsave\\ny\\nquit\" | sz_configtool\n\n            echo \"Senzing configuration complete\"\n            "
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "jobId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.App/jobs', parameters('name'))]"
+            },
+            "jobName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'containerAppsEnvCore')]",
+        "[resourceId('Microsoft.Resources/deployments', 'createMiUserJob')]",
+        "[resourceId('Microsoft.Resources/deployments', 'managedIdentity')]",
+        "[resourceId('Microsoft.Resources/deployments', 'sqlServer')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "toolsApp",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-tools', variables('resourcePrefix'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "containerAppsEnvId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerAppsEnvCore'), '2025-04-01').outputs.id.value]"
+          },
+          "image": {
+            "value": "[parameters('senzingToolsImage')]"
+          },
+          "senzingConfigJson": {
+            "value": "[string(createObject('PIPELINE', createObject('CONFIGPATH', '/etc/opt/senzing', 'LICENSESTRINGBASE64', parameters('senzingLicenseBase64'), 'RESOURCEPATH', '/opt/senzing/er/resources', 'SUPPORTPATH', '/opt/senzing/data'), 'SQL', createObject('BACKEND', 'SQL', 'CONNECTION', format('mssql://{0}:dummy@{1}:1433:{2}/?authentication=ActiveDirectoryMsi&encrypt=yes', reference(resourceId('Microsoft.Resources/deployments', 'managedIdentity'), '2025-04-01').outputs.clientId.value, reference(resourceId('Microsoft.Resources/deployments', 'sqlServer'), '2025-04-01').outputs.fqdn.value, parameters('databaseName')))))]"
+          },
+          "managedIdentityId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'managedIdentity'), '2025-04-01').outputs.id.value]"
+          },
+          "acrLoginServer": {
+            "value": "[variables('acrLoginServer')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "11218768761623137133"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Container App"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the app"
+              }
+            },
+            "containerAppsEnvId": {
+              "type": "string",
+              "metadata": {
+                "description": "Container Apps Environment ID"
+              }
+            },
+            "image": {
+              "type": "string",
+              "metadata": {
+                "description": "Senzing tools container image"
+              }
+            },
+            "senzingConfigJson": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Senzing engine configuration JSON (managed identity)"
+              }
+            },
+            "managedIdentityId": {
+              "type": "string",
+              "metadata": {
+                "description": "User-assigned Managed Identity resource ID"
+              }
+            },
+            "acrLoginServer": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "ACR login server (e.g., myacr.azurecr.io) - if provided, configures ACR pull with managed identity"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/containerApps",
+              "apiVersion": "2023-05-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', parameters('managedIdentityId'))]": {}
+                }
+              },
+              "properties": {
+                "environmentId": "[parameters('containerAppsEnvId')]",
+                "configuration": {
+                  "activeRevisionsMode": "Single",
+                  "secrets": [
+                    {
+                      "name": "senzing-config",
+                      "value": "[parameters('senzingConfigJson')]"
+                    }
+                  ],
+                  "registries": "[if(not(empty(parameters('acrLoginServer'))), createArray(createObject('server', parameters('acrLoginServer'), 'identity', parameters('managedIdentityId'))), createArray())]"
+                },
+                "template": {
+                  "containers": [
+                    {
+                      "name": "tools",
+                      "image": "[parameters('image')]",
+                      "resources": {
+                        "cpu": "[json('1.0')]",
+                        "memory": "2Gi"
+                      },
+                      "command": [
+                        "/bin/bash",
+                        "-c",
+                        "sleep infinity"
+                      ],
+                      "env": [
+                        {
+                          "name": "SENZING_ENGINE_CONFIGURATION_JSON",
+                          "secretRef": "senzing-config"
+                        }
+                      ]
+                    }
+                  ],
+                  "scale": {
+                    "minReplicas": 1,
+                    "maxReplicas": 1
+                  }
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "appId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.App/containerApps', parameters('name'))]"
+            },
+            "appName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'containerAppsEnvCore')]",
+        "[resourceId('Microsoft.Resources/deployments', 'g2ConfigToolJob')]",
+        "[resourceId('Microsoft.Resources/deployments', 'managedIdentity')]",
+        "[resourceId('Microsoft.Resources/deployments', 'sqlServer')]"
+      ]
+    },
+    {
+      "condition": "[and(variables('runFullServices'), not(parameters('skipStreamLoader')))]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "streamLoaderApp",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-loader', variables('resourcePrefix'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "containerAppsEnvId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerAppsEnvLoader'), '2025-04-01').outputs.id.value]"
+          },
+          "image": {
+            "value": "[parameters('streamLoaderImage')]"
+          },
+          "senzingConfigJson": {
+            "value": "[string(createObject('PIPELINE', createObject('CONFIGPATH', '/etc/opt/senzing', 'LICENSESTRINGBASE64', parameters('senzingLicenseBase64'), 'RESOURCEPATH', '/opt/senzing/er/resources', 'SUPPORTPATH', '/opt/senzing/data'), 'SQL', createObject('BACKEND', 'SQL', 'CONNECTION', format('mssql://{0}:dummy@{1}:1433:{2}/?authentication=ActiveDirectoryMsi&encrypt=yes', reference(resourceId('Microsoft.Resources/deployments', 'managedIdentity'), '2025-04-01').outputs.clientId.value, reference(resourceId('Microsoft.Resources/deployments', 'sqlServer'), '2025-04-01').outputs.fqdn.value, parameters('databaseName')))))]"
+          },
+          "managedIdentityId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'managedIdentity'), '2025-04-01').outputs.id.value]"
+          },
+          "serviceBusNamespace": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'serviceBus'), '2025-04-01').outputs.namespaceName.value]"
+          },
+          "serviceBusQueueName": {
+            "value": "senzing-input"
+          },
+          "serviceBusConnectionString": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'serviceBus'), '2025-04-01').outputs.listenConnectionString.value]"
+          },
+          "serviceBusManageConnectionString": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'serviceBus'), '2025-04-01').outputs.manageConnectionString.value]"
+          },
+          "minReplicas": {
+            "value": "[parameters('streamLoaderMinReplicas')]"
+          },
+          "maxReplicas": {
+            "value": "[parameters('streamLoaderMaxReplicas')]"
+          },
+          "acrLoginServer": {
+            "value": "[variables('acrLoginServer')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "9454702117595505031"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Container App"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the app"
+              }
+            },
+            "containerAppsEnvId": {
+              "type": "string",
+              "metadata": {
+                "description": "Container Apps Environment ID"
+              }
+            },
+            "image": {
+              "type": "string",
+              "metadata": {
+                "description": "StreamLoader container image"
+              }
+            },
+            "senzingConfigJson": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Senzing engine configuration JSON (managed identity)"
+              }
+            },
+            "managedIdentityId": {
+              "type": "string",
+              "metadata": {
+                "description": "User-assigned Managed Identity resource ID"
+              }
+            },
+            "serviceBusNamespace": {
+              "type": "string",
+              "metadata": {
+                "description": "Service Bus namespace name (for KEDA scaling)"
+              }
+            },
+            "serviceBusQueueName": {
+              "type": "string",
+              "metadata": {
+                "description": "Service Bus queue name"
+              }
+            },
+            "serviceBusConnectionString": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Service Bus connection string for consuming messages (Listen rights)"
+              }
+            },
+            "serviceBusManageConnectionString": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Service Bus connection string for KEDA scaling (Manage rights required to query queue metrics)"
+              }
+            },
+            "minReplicas": {
+              "type": "int",
+              "defaultValue": 0,
+              "metadata": {
+                "description": "Minimum number of replicas"
+              }
+            },
+            "maxReplicas": {
+              "type": "int",
+              "metadata": {
+                "description": "Maximum number of replicas"
+              }
+            },
+            "acrLoginServer": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "ACR login server (e.g., myacr.azurecr.io) - if provided, configures ACR pull with managed identity"
+              }
+            }
+          },
+          "variables": {
+            "scaleRules": [
+              {
+                "name": "servicebus-scale",
+                "custom": {
+                  "type": "azure-servicebus",
+                  "metadata": {
+                    "queueName": "[parameters('serviceBusQueueName')]",
+                    "namespace": "[parameters('serviceBusNamespace')]",
+                    "messageCount": "100"
+                  },
+                  "auth": [
+                    {
+                      "secretRef": "servicebus-manage",
+                      "triggerParameter": "connection"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/containerApps",
+              "apiVersion": "2023-05-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', parameters('managedIdentityId'))]": {}
+                }
+              },
+              "properties": {
+                "environmentId": "[parameters('containerAppsEnvId')]",
+                "configuration": {
+                  "activeRevisionsMode": "Single",
+                  "secrets": [
+                    {
+                      "name": "senzing-config",
+                      "value": "[parameters('senzingConfigJson')]"
+                    },
+                    {
+                      "name": "servicebus-connection",
+                      "value": "[parameters('serviceBusConnectionString')]"
+                    },
+                    {
+                      "name": "servicebus-manage",
+                      "value": "[parameters('serviceBusManageConnectionString')]"
+                    }
+                  ],
+                  "registries": "[if(not(empty(parameters('acrLoginServer'))), createArray(createObject('server', parameters('acrLoginServer'), 'identity', parameters('managedIdentityId'))), createArray())]"
+                },
+                "template": {
+                  "containers": [
+                    {
+                      "name": "stream-loader",
+                      "image": "[parameters('image')]",
+                      "resources": {
+                        "cpu": "[json('2.0')]",
+                        "memory": "4Gi"
+                      },
+                      "env": [
+                        {
+                          "name": "SENZING_ENGINE_CONFIGURATION_JSON",
+                          "secretRef": "senzing-config"
+                        },
+                        {
+                          "name": "SENZING_AZURE_QUEUE_CONNECTION_STRING",
+                          "secretRef": "servicebus-connection"
+                        },
+                        {
+                          "name": "SENZING_AZURE_QUEUE_NAME",
+                          "value": "[parameters('serviceBusQueueName')]"
+                        },
+                        {
+                          "name": "SENZING_THREADS_PER_PROCESS",
+                          "value": "4"
+                        }
+                      ]
+                    }
+                  ],
+                  "scale": {
+                    "minReplicas": "[parameters('minReplicas')]",
+                    "maxReplicas": "[parameters('maxReplicas')]",
+                    "rules": "[variables('scaleRules')]"
+                  }
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "appId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.App/containerApps', parameters('name'))]"
+            },
+            "appName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "fqdn": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('name')), '2023-05-01').latestRevisionFqdn]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'containerAppsEnvLoader')]",
+        "[resourceId('Microsoft.Resources/deployments', 'g2ConfigToolJob')]",
+        "[resourceId('Microsoft.Resources/deployments', 'managedIdentity')]",
+        "[resourceId('Microsoft.Resources/deployments', 'serviceBus')]",
+        "[resourceId('Microsoft.Resources/deployments', 'sqlServer')]"
+      ]
+    },
+    {
+      "condition": "[variables('runFullServices')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "redoerApp",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-redoer', variables('resourcePrefix'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "containerAppsEnvId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerAppsEnvCore'), '2025-04-01').outputs.id.value]"
+          },
+          "image": {
+            "value": "[parameters('redoerImage')]"
+          },
+          "senzingConfigJson": {
+            "value": "[string(createObject('PIPELINE', createObject('CONFIGPATH', '/etc/opt/senzing', 'LICENSESTRINGBASE64', parameters('senzingLicenseBase64'), 'RESOURCEPATH', '/opt/senzing/er/resources', 'SUPPORTPATH', '/opt/senzing/data'), 'SQL', createObject('BACKEND', 'SQL', 'CONNECTION', format('mssql://{0}:dummy@{1}:1433:{2}/?authentication=ActiveDirectoryMsi&encrypt=yes', reference(resourceId('Microsoft.Resources/deployments', 'managedIdentity'), '2025-04-01').outputs.clientId.value, reference(resourceId('Microsoft.Resources/deployments', 'sqlServer'), '2025-04-01').outputs.fqdn.value, parameters('databaseName')))))]"
+          },
+          "managedIdentityId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'managedIdentity'), '2025-04-01').outputs.id.value]"
+          },
+          "maxReplicas": {
+            "value": "[parameters('redoerMaxReplicas')]"
+          },
+          "acrLoginServer": {
+            "value": "[variables('acrLoginServer')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "3180304129296737171"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Container App"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the app"
+              }
+            },
+            "containerAppsEnvId": {
+              "type": "string",
+              "metadata": {
+                "description": "Container Apps Environment ID"
+              }
+            },
+            "image": {
+              "type": "string",
+              "metadata": {
+                "description": "Redoer container image"
+              }
+            },
+            "senzingConfigJson": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Senzing engine configuration JSON (managed identity)"
+              }
+            },
+            "managedIdentityId": {
+              "type": "string",
+              "metadata": {
+                "description": "User-assigned Managed Identity resource ID"
+              }
+            },
+            "maxReplicas": {
+              "type": "int",
+              "metadata": {
+                "description": "Maximum number of replicas"
+              }
+            },
+            "acrLoginServer": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "ACR login server (e.g., myacr.azurecr.io) - if provided, configures ACR pull with managed identity"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/containerApps",
+              "apiVersion": "2023-05-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', parameters('managedIdentityId'))]": {}
+                }
+              },
+              "properties": {
+                "environmentId": "[parameters('containerAppsEnvId')]",
+                "configuration": {
+                  "activeRevisionsMode": "Single",
+                  "secrets": [
+                    {
+                      "name": "senzing-config",
+                      "value": "[parameters('senzingConfigJson')]"
+                    }
+                  ],
+                  "registries": "[if(not(empty(parameters('acrLoginServer'))), createArray(createObject('server', parameters('acrLoginServer'), 'identity', parameters('managedIdentityId'))), createArray())]"
+                },
+                "template": {
+                  "containers": [
+                    {
+                      "name": "redoer",
+                      "image": "[parameters('image')]",
+                      "resources": {
+                        "cpu": "[json('2.0')]",
+                        "memory": "4Gi"
+                      },
+                      "env": [
+                        {
+                          "name": "SENZING_ENGINE_CONFIGURATION_JSON",
+                          "secretRef": "senzing-config"
+                        },
+                        {
+                          "name": "SENZING_THREADS_PER_PROCESS",
+                          "value": "4"
+                        },
+                        {
+                          "name": "SENZING_REDO_SLEEP_TIME_IN_SECONDS",
+                          "value": "60"
+                        }
+                      ]
+                    }
+                  ],
+                  "scale": {
+                    "minReplicas": 1,
+                    "maxReplicas": "[parameters('maxReplicas')]",
+                    "rules": [
+                      {
+                        "name": "cpu-scale",
+                        "custom": {
+                          "type": "cpu",
+                          "metadata": {
+                            "type": "Utilization",
+                            "value": "70"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "appId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.App/containerApps', parameters('name'))]"
+            },
+            "appName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "fqdn": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('name')), '2023-05-01').latestRevisionFqdn]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'containerAppsEnvCore')]",
+        "[resourceId('Microsoft.Resources/deployments', 'g2ConfigToolJob')]",
+        "[resourceId('Microsoft.Resources/deployments', 'managedIdentity')]",
+        "[resourceId('Microsoft.Resources/deployments', 'sqlServer')]"
+      ]
+    },
+    {
+      "condition": "[and(variables('runFullServices'), parameters('runStreamProducer'))]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "streamProducerJobs",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-prod', variables('resourcePrefix'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "containerAppsEnvId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerAppsEnvProducer'), '2025-04-01').outputs.id.value]"
+          },
+          "image": {
+            "value": "[parameters('streamProducerImage')]"
+          },
+          "managedIdentityId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'managedIdentity'), '2025-04-01').outputs.id.value]"
+          },
+          "serviceBusConnectionString": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'serviceBus'), '2025-04-01').outputs.connectionString.value]"
+          },
+          "serviceBusQueueName": {
+            "value": "senzing-input"
+          },
+          "recordMax": {
+            "value": "[parameters('recordMax')]"
+          },
+          "acrLoginServer": {
+            "value": "[variables('acrLoginServer')]"
+          },
+          "inputUrl": {
+            "value": "[parameters('testDataInputUrl')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "9477766256198571926"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Base name for the jobs"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the jobs"
+              }
+            },
+            "containerAppsEnvId": {
+              "type": "string",
+              "metadata": {
+                "description": "Container Apps Environment ID"
+              }
+            },
+            "image": {
+              "type": "string",
+              "metadata": {
+                "description": "Stream Producer container image"
+              }
+            },
+            "managedIdentityId": {
+              "type": "string",
+              "metadata": {
+                "description": "User-assigned Managed Identity resource ID"
+              }
+            },
+            "serviceBusConnectionString": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Service Bus connection string (stream-producer does not support MI)"
+              }
+            },
+            "serviceBusQueueName": {
+              "type": "string",
+              "metadata": {
+                "description": "Service Bus queue name"
+              }
+            },
+            "recordMax": {
+              "type": "int",
+              "allowedValues": [
+                1,
+                1000000,
+                2000000,
+                5000000,
+                10000000,
+                20000000,
+                25000000,
+                50000000,
+                100000000
+              ],
+              "metadata": {
+                "description": "Maximum number of records to load"
+              }
+            },
+            "acrLoginServer": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "ACR login server (e.g., myacr.azurecr.io) - if provided, configures ACR pull with managed identity"
+              }
+            },
+            "inputUrl": {
+              "type": "string",
+              "metadata": {
+                "description": "Input data file URL"
+              }
+            }
+          },
+          "variables": {
+            "copy": [
+              {
+                "name": "jobConfigs",
+                "count": "[length(range(0, variables('jobCount')))]",
+                "input": {
+                  "index": "[range(0, variables('jobCount'))[copyIndex('jobConfigs')]]",
+                  "recordMin": "[mul(range(0, variables('jobCount'))[copyIndex('jobConfigs')], variables('stride'))]",
+                  "recordMax": "[min(mul(add(range(0, variables('jobCount'))[copyIndex('jobConfigs')], 1), variables('stride')), parameters('recordMax'))]"
+                }
+              }
+            ],
+            "stride": "[if(lessOrEquals(parameters('recordMax'), 5000000), 500000, if(lessOrEquals(parameters('recordMax'), 10000000), 500000, if(lessOrEquals(parameters('recordMax'), 25000000), 1000000, if(lessOrEquals(parameters('recordMax'), 50000000), 2000000, 4000000))))]",
+            "jobCount": "[if(lessOrEquals(parameters('recordMax'), variables('stride')), 1, div(sub(add(parameters('recordMax'), variables('stride')), 1), variables('stride')))]"
+          },
+          "resources": [
+            {
+              "copy": {
+                "name": "streamProducerJobs",
+                "count": "[length(variables('jobConfigs'))]"
+              },
+              "type": "Microsoft.App/jobs",
+              "apiVersion": "2023-05-01",
+              "name": "[format('{0}-{1}', parameters('name'), copyIndex())]",
+              "location": "[parameters('location')]",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', parameters('managedIdentityId'))]": {}
+                }
+              },
+              "properties": {
+                "environmentId": "[parameters('containerAppsEnvId')]",
+                "configuration": {
+                  "triggerType": "Manual",
+                  "replicaTimeout": 86400,
+                  "replicaRetryLimit": 0,
+                  "secrets": [
+                    {
+                      "name": "servicebus-connection",
+                      "value": "[parameters('serviceBusConnectionString')]"
+                    }
+                  ],
+                  "registries": "[if(not(empty(parameters('acrLoginServer'))), createArray(createObject('server', parameters('acrLoginServer'), 'identity', parameters('managedIdentityId'))), createArray())]"
+                },
+                "template": {
+                  "containers": [
+                    {
+                      "name": "stream-producer",
+                      "image": "[parameters('image')]",
+                      "resources": {
+                        "cpu": "[json('2.0')]",
+                        "memory": "4Gi"
+                      },
+                      "env": [
+                        {
+                          "name": "SENZING_SUBCOMMAND",
+                          "value": "gzipped-json-to-azure-queue"
+                        },
+                        {
+                          "name": "SENZING_INPUT_URL",
+                          "value": "[parameters('inputUrl')]"
+                        },
+                        {
+                          "name": "SENZING_DEFAULT_DATA_SOURCE",
+                          "value": "TEST"
+                        },
+                        {
+                          "name": "SENZING_DEFAULT_ENTITY_TYPE",
+                          "value": "GENERIC"
+                        },
+                        {
+                          "name": "SENZING_RECORD_MIN",
+                          "value": "[string(variables('jobConfigs')[copyIndex()].recordMin)]"
+                        },
+                        {
+                          "name": "SENZING_RECORD_MAX",
+                          "value": "[string(variables('jobConfigs')[copyIndex()].recordMax)]"
+                        },
+                        {
+                          "name": "SENZING_RECORD_MONITOR",
+                          "value": "100000"
+                        },
+                        {
+                          "name": "SENZING_RECORDS_PER_MESSAGE",
+                          "value": "1"
+                        },
+                        {
+                          "name": "SENZING_MONITORING_PERIOD_IN_SECONDS",
+                          "value": "60"
+                        },
+                        {
+                          "name": "SENZING_READ_QUEUE_MAXSIZE",
+                          "value": "500"
+                        },
+                        {
+                          "name": "SENZING_THREADS_PER_PRINT",
+                          "value": "30"
+                        },
+                        {
+                          "name": "SENZING_AZURE_QUEUE_CONNECTION_STRING",
+                          "secretRef": "servicebus-connection"
+                        },
+                        {
+                          "name": "SENZING_AZURE_QUEUE_NAME",
+                          "value": "[parameters('serviceBusQueueName')]"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "jobCount": {
+              "type": "int",
+              "value": "[variables('jobCount')]"
+            },
+            "jobNames": {
+              "type": "array",
+              "copy": {
+                "count": "[length(range(0, variables('jobCount')))]",
+                "input": "[format('{0}-{1}', parameters('name'), range(0, variables('jobCount'))[copyIndex()])]"
+              }
+            },
+            "jobConfigs": {
+              "type": "array",
+              "value": "[variables('jobConfigs')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'containerAppsEnvProducer')]",
+        "[resourceId('Microsoft.Resources/deployments', 'g2ConfigToolJob')]",
+        "[resourceId('Microsoft.Resources/deployments', 'managedIdentity')]",
+        "[resourceId('Microsoft.Resources/deployments', 'serviceBus')]"
+      ]
+    }
+  ],
+  "outputs": {
+    "sqlServerFqdn": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'sqlServer'), '2025-04-01').outputs.fqdn.value]"
+    },
+    "containerAppsEnvCoreId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerAppsEnvCore'), '2025-04-01').outputs.id.value]"
+    },
+    "containerAppsEnvLoaderId": {
+      "type": "string",
+      "value": "[if(variables('runFullServices'), reference(resourceId('Microsoft.Resources/deployments', 'containerAppsEnvLoader'), '2025-04-01').outputs.id.value, '')]"
+    },
+    "containerAppsEnvProducerId": {
+      "type": "string",
+      "value": "[if(and(variables('runFullServices'), parameters('runStreamProducer')), reference(resourceId('Microsoft.Resources/deployments', 'containerAppsEnvProducer'), '2025-04-01').outputs.id.value, '')]"
+    },
+    "toolsAppName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'toolsApp'), '2025-04-01').outputs.appName.value]"
+    },
+    "keyVaultUri": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'keyVault'), '2025-04-01').outputs.vaultUri.value]"
+    },
+    "managedIdentityClientId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'managedIdentity'), '2025-04-01').outputs.clientId.value]"
+    },
+    "serviceBusNamespace": {
+      "type": "string",
+      "value": "[if(variables('runFullServices'), reference(resourceId('Microsoft.Resources/deployments', 'serviceBus'), '2025-04-01').outputs.namespaceName.value, '')]"
+    },
+    "streamLoaderAppFqdn": {
+      "type": "string",
+      "value": "[if(and(variables('runFullServices'), not(parameters('skipStreamLoader'))), reference(resourceId('Microsoft.Resources/deployments', 'streamLoaderApp'), '2025-04-01').outputs.fqdn.value, '')]"
+    },
+    "redoerAppFqdn": {
+      "type": "string",
+      "value": "[if(variables('runFullServices'), reference(resourceId('Microsoft.Resources/deployments', 'redoerApp'), '2025-04-01').outputs.fqdn.value, '')]"
+    },
+    "streamProducerJobCount": {
+      "type": "int",
+      "value": "[if(and(variables('runFullServices'), parameters('runStreamProducer')), reference(resourceId('Microsoft.Resources/deployments', 'streamProducerJobs'), '2025-04-01').outputs.jobCount.value, 0)]"
+    },
+    "streamProducerJobNames": {
+      "type": "array",
+      "value": "[if(and(variables('runFullServices'), parameters('runStreamProducer')), reference(resourceId('Microsoft.Resources/deployments', 'streamProducerJobs'), '2025-04-01').outputs.jobNames.value, createArray())]"
+    }
+  }
+}
